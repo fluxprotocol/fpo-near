@@ -53,12 +53,12 @@ enum StorageKeys {
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
-pub struct RequesterContract {
+pub struct FPOContract {
     pub providers: LookupMap<AccountId, Provider>, // maps:  AccountId => Provider
 }
 
 #[near_bindgen]
-impl RequesterContract {
+impl FPOContract {
     #[init]
     pub fn new() -> Self {
         Self {
@@ -231,7 +231,7 @@ impl RequesterContract {
 //     fn ri_not_oracle() {
 //         // let context = get_context(vec![], false);
 //         // testing_env!(context);
-//         // let contract = RequesterContract::new(oracle(), token(), None);
+//         // let contract = FPOContract::new(oracle(), token(), None);
 //         // contract.request_ft_transfer(token(), 100, alice());
 //     }
 

@@ -1,5 +1,5 @@
 [package]
-name = "request-interface"
+name = "near-fpo"
 version = "0.2.1"
 authors = ["Flux Contributors <contributors@flux.xyz>"]
 edition = "2018"
