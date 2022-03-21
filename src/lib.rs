@@ -68,7 +68,7 @@ impl FPOContract {
 
     #[payable]
     pub fn create_pair(&mut self, pair: String, decimals: u16, initial_price: U128) {
-        let initial_storage_usage = env::storage_usage();
+        // let initial_storage_usage = env::storage_usage();
         let mut provider = self
             .providers
             .get(&env::predecessor_account_id())
@@ -88,7 +88,7 @@ impl FPOContract {
         self.providers
             .insert(&env::predecessor_account_id(), &provider);
 
-        helpers::refund_storage(initial_storage_usage, env::predecessor_account_id());
+        // helpers::refund_storage(initial_storage_usage, env::predecessor_account_id());
     }
 
     pub fn pair_exists(&self, pair: String, provider: AccountId) -> bool {
@@ -183,56 +183,63 @@ impl FPOContract {
     }
 }
 
-// #[cfg(not(target_arch = "wasm32"))]
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use flux_sdk::DataRequestDataType;
-//     use near_sdk::json_types::U128;
-//     use near_sdk::serde_json;
-//     use near_sdk::MockedBlockchain;
-//     use near_sdk::{testing_env, VMContext};
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use near_sdk::MockedBlockchain;
+    use near_sdk::{testing_env, VMContext};
 
-//     fn alice() -> AccountId {
-//         "alice.near".to_string()
-//     }
+    // part of writing unit tests is setting up a mock context
+    // in this example, this is only needed for env::log in the contract
+    // this is also a useful list to peek at when wondering what's available in env::*
+    fn get_context(input: Vec<u8>, is_view: bool) -> VMContext {
+        VMContext {
+            current_account_id: "alice.testnet".to_string(),
+            signer_account_id: "robert.testnet".to_string(),
+            signer_account_pk: vec![0, 1, 2],
+            predecessor_account_id: "jane.testnet".to_string(),
+            input,
+            block_index: 0,
+            block_timestamp: 0,
+            account_balance: 0,
+            account_locked_balance: 0,
+            storage_usage: 0,
+            attached_deposit: 0,
+            prepaid_gas: 10u64.pow(18),
+            random_seed: vec![0, 1, 2],
+            is_view,
+            output_data_receivers: vec![],
+            epoch_height: 19,
+        }
+    }
 
-//     fn oracle() -> AccountId {
-//         "oracle.near".to_string()
-//     }
+    // mark individual unit tests with #[test] for them to be registered and fired
+    #[test]
+    fn create_pair() {
+        // set up the mock context into the testing environment
+        let context = get_context(vec![], false);
+        testing_env!(context);
+        // instantiate a contract variable
+        let mut fpo_contract = FPOContract::new();
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
+        assert_eq!(true, fpo_contract.pair_exists("ETH/USD".to_string(), env::predecessor_account_id()));
+    }
 
-//     fn token() -> AccountId {
-//         "token.near".to_string()
-//     }
+    #[test]
+    fn push_data() {
+        // set up the mock context into the testing environment
+        let context = get_context(vec![], false);
+        testing_env!(context);
+        // instantiate a contract variable
+        let mut fpo_contract = FPOContract::new();
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
+        assert_eq!(U128(2500), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
 
-//     fn get_context(input: Vec<u8>, is_view: bool) -> VMContext {
-//         VMContext {
-//             current_account_id: alice(),
-//             signer_account_id: alice(),
-//             signer_account_pk: vec![0, 1, 2],
-//             predecessor_account_id: alice(),
-//             input,
-//             block_index: 0,
-//             block_timestamp: 0,
-//             account_balance: 10000 * 10u128.pow(24),
-//             account_locked_balance: 0,
-//             storage_usage: 0,
-//             attached_deposit: 0,
-//             prepaid_gas: 10u64.pow(18),
-//             random_seed: vec![0, 1, 2],
-//             is_view,
-//             output_data_receivers: vec![],
-//             epoch_height: 0,
-//         }
-//     }
+        fpo_contract.push_data("ETH/USD".to_string(),  U128(3000));
+       
+        assert_eq!(U128(3000), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
 
-//     #[test]
-//     #[should_panic(expected = "ERR_INVALID_ORACLE_ADDRESS")]
-//     fn ri_not_oracle() {
-//         // let context = get_context(vec![], false);
-//         // testing_env!(context);
-//         // let contract = FPOContract::new(oracle(), token(), None);
-//         // contract.request_ft_transfer(token(), 100, alice());
-//     }
+    }
 
-// }
+   
+}
