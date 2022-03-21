@@ -15,17 +15,20 @@ pub struct PriceEntry {
     last_update: WrappedTimestamp, // Time or report
 }
 
+/// PROVIDER VARIABLES
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Provider {
     pub query_fee: u128,
     pub pairs: LookupMap<String, PriceEntry>, // Maps "{TICKER_1}/{TICKER_2}" => PriceEntry - e.g.: ETHUSD => PriceEntry
 }
 
+/// PROVIDER STORAGE KEYS
 #[derive(BorshStorageKey, BorshSerialize)]
 enum ProviderStorageKeys {
     Pairs,
 }
 
+/// PROVIDER IMPLEMENTATION (INTERNAL)
 impl Provider {
     pub fn new() -> Self {
         Self {
@@ -34,18 +37,21 @@ impl Provider {
         }
     }
 
+    /// Returns all data associated with a price pair
     pub fn get_entry_expect(&self, pair: &String) -> PriceEntry {
         self.pairs
             .get(pair)
             .expect("no price available for this pair")
     }
 
+    /// Sets the fee for querying prices (not yet implemented)
     pub fn set_fee(&mut self, fee: u128) {
         self.query_fee = fee
     }
 
+    /// Sets the answer for a given price pair by a provider
     pub fn set_price(&mut self, pair: String, price: U128) {
-        let mut entry = self.pairs.get(&pair).expect("pair does not exist yet");
+        let mut entry = self.pairs.get(&pair).expect("pair does not exist");
         entry.last_update = env::block_timestamp().into();
         entry.price = price;
 
@@ -53,6 +59,7 @@ impl Provider {
     }
 }
 
+/// GLOBAL VARIABLES
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct FPOContract {
@@ -60,12 +67,14 @@ pub struct FPOContract {
     pub accounts: LookupMap<AccountId, AccountStorageBalance>, // storage map
 }
 
+/// STORAGE KEYS
 #[derive(BorshStorageKey, BorshSerialize)]
 enum FPOStorageKeys {
     Providers,
     StorageAccounts
 }
 
+/// PUBLIC CONTRACT METHODS
 #[near_bindgen]
 impl FPOContract {
     #[init]
@@ -76,9 +85,9 @@ impl FPOContract {
         }
     }
 
+    /// Creates a new price pair by a provider
     #[payable]
     pub fn create_pair(&mut self, pair: String, decimals: u16, initial_price: U128) {
-        // let initial_storage_usage = env::storage_usage();
         let mut provider = self
             .providers
             .get(&env::predecessor_account_id())
@@ -97,10 +106,9 @@ impl FPOContract {
 
         self.providers
             .insert(&env::predecessor_account_id(), &provider);
-
-        // helpers::refund_storage(initial_storage_usage, env::predecessor_account_id());
     }
 
+    /// Checks if a given price pair exists
     pub fn pair_exists(&self, pair: String, provider: AccountId) -> bool {
         self.get_provider_expect(&provider)
             .pairs
@@ -108,6 +116,7 @@ impl FPOContract {
             .is_some()
     }
 
+    /// Sets the price for a given price pair by a provider
     #[payable]
     pub fn push_data(&mut self, pair: String, price: U128) {
         let initial_storage_usage = env::storage_usage();
@@ -120,10 +129,12 @@ impl FPOContract {
         helpers::refund_storage(initial_storage_usage, env::predecessor_account_id());
     }
 
+    /// Returns all data associated with a price pair by a provider
     pub fn get_entry(&self, pair: String, provider: AccountId) -> PriceEntry {
         self.get_provider_expect(&provider).get_entry_expect(&pair)
     }
 
+    /// Returns an average of prices given by specified pairs and providers
     pub fn aggregate_avg(
         &self,
         pairs: Vec<String>,
@@ -154,6 +165,7 @@ impl FPOContract {
         U128(cum / amount_of_providers as u128)
     }
 
+    /// Returns multiple prices given by specified pairs and providers
     pub fn aggregate_collect(
         &self,
         pairs: Vec<String>,
@@ -186,6 +198,7 @@ impl FPOContract {
             .collect()
     }
 
+    /// Returns all the data associated with a provider
     fn get_provider_expect(&self, account_id: &AccountId) -> Provider {
         self.providers
             .get(account_id)
