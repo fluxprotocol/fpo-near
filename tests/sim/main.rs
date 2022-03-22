@@ -4,7 +4,7 @@ use near_sdk_sim::{call, view, deploy, init_simulator, ContractAccount, UserAcco
 use near_fpo::FPOContractContract;
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
-    FPO_BYTES => "/home/mnaga/flux/fpo-near/target/wasm32-unknown-unknown/release/near_fpo.wasm",
+    FPO_BYTES => "target/wasm32-unknown-unknown/release/near_fpo.wasm",
 }
 
 pub const DEFAULT_GAS: u64 = 300_000_000_000_000;
