@@ -3,11 +3,10 @@ mod storage_manager;
 use std::fmt::Debug;
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::env::predecessor_account_id;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::collections::LookupMap;
 use near_sdk::json_types::{WrappedTimestamp, U128};
-use near_sdk::{env, near_bindgen, AccountId, BorshStorageKey, PanicOnDefault, result_serializer};
+use near_sdk::{env, near_bindgen, AccountId, BorshStorageKey, PanicOnDefault};
 use storage_manager::AccountStorageBalance;
 near_sdk::setup_alloc!();
 
@@ -23,7 +22,7 @@ pub struct PriceEntry {
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Provider {
     pub query_fee: u128,
-    pub pairs: LookupMap<String, PriceEntry>, // Maps "{TICKER_1}/{TICKER_2}" => PriceEntry - e.g.: ETHUSD => PriceEntry
+    pub pairs: LookupMap<String, PriceEntry>, // Maps "{TICKER_1}/{TICKER_2}-{PROVIDER}" => PriceEntry - e.g.: ETHUSD => PriceEntry
 }
 
 /// PROVIDER STORAGE KEYS
@@ -102,17 +101,11 @@ impl FPOContract {
             .get(&env::predecessor_account_id())
             .unwrap_or_else(||Provider::new());
         
-
-        self.providers
-        .insert(&env::predecessor_account_id(), &provider);
-
-        // WHY DOESN'T THIS workkkkk?
-        // println!("PROVIDER PAIR: {:?}", self.providers.get(&env::predecessor_account_id()).pairs.get(&pair));
-
-        println!("PROVIDER PAIR: {:?}", &provider.pairs.get(&pair));
-        assert!(provider.pairs.get(&pair).is_none(), "pair already exists");
+        let pair_name = format!("{}-{}", pair, env::current_account_id());
+        println!("PROVIDER PAIR: {:?}", &provider.pairs.get(&pair_name));
+        assert!(provider.pairs.get(&pair_name).is_none(), "pair already exists");
         provider.pairs.insert(
-            &pair,
+            &pair_name,
             &PriceEntry {
                 price: initial_price,
                 decimals,
@@ -120,24 +113,17 @@ impl FPOContract {
             },
         );
 
-        // HOW DO WE PRINT LOOKUP MAP VALUESSSS??
-
-        // let log_message = format!("Value from LookupMap is {:?}", provider.get(&env::predecessor_account_id()));
-        //     env::log(log_message.as_bytes());
-
-        // self.providers
-        //     .insert(&env::predecessor_account_id(), &provider);
-
-        // println!("PROVIDER ADDED: {:#?}", self.providers.get(&env::predecessor_account_id());
-
+        self.providers
+            .insert(&env::predecessor_account_id(), &provider);
 
     }
 
     /// Checks if a given price pair exists
     pub fn pair_exists(&self, pair: String, provider: AccountId) -> bool {
+        let pair_name = format!("{}-{}", pair, provider);
         self.get_provider_expect(&provider)
             .pairs
-            .get(&pair)
+            .get(&pair_name)
             .is_some()
     }
 
@@ -147,7 +133,8 @@ impl FPOContract {
         let initial_storage_usage = env::storage_usage();
 
         let mut provider = self.get_provider_expect(&env::predecessor_account_id());
-        provider.set_price(pair, price);
+        let pair_name = format!("{}-{}", pair, env::current_account_id());
+        provider.set_price(pair_name, price);
         self.providers
             .insert(&env::predecessor_account_id(), &provider);
         
@@ -156,7 +143,8 @@ impl FPOContract {
 
     /// Returns all data associated with a price pair by a provider
     pub fn get_entry(&self, pair: String, provider: AccountId) -> PriceEntry {
-        self.get_provider_expect(&provider).get_entry_expect(&pair)
+        let pair_name = format!("{}-{}", pair, provider);
+        self.get_provider_expect(&provider).get_entry_expect(&pair_name)
     }
 
     /// Returns an average of prices given by specified pairs and providers
@@ -176,7 +164,8 @@ impl FPOContract {
 
         let cum = pairs.iter().enumerate().fold(0, |s, (i, account_id)| {
             let provider = self.get_provider_expect(&account_id);
-            let entry = provider.get_entry_expect(&pairs[i]);
+            let pair_name = format!("{}-{}", pairs[i], account_id);
+            let entry = provider.get_entry_expect(&pair_name);
 
             // If this entry was updated after the min_last_update take it out of the average
             if u64::from(entry.last_update) < min_last_update {
@@ -211,7 +200,8 @@ impl FPOContract {
                     .providers
                     .get(&account_id)
                     .expect("no provider with account id");
-                let entry = provider.get_entry_expect(&pairs[i]);
+                let pair_name = format!("{}-{}", pairs[i], account_id);
+                let entry = provider.get_entry_expect(&pair_name);
 
                 // If this entry was updated after the min_last_update take it out of the average
                 if u64::from(entry.last_update) < min_last_update {
@@ -241,9 +231,6 @@ mod tests {
     }
     fn bob() -> AccountId {
         "bob.near".to_string()
-    }
-    fn carol() -> AccountId {
-        "carol.near".to_string()
     }
 
     // part of writing unit tests is setting up a mock context
@@ -298,36 +285,30 @@ mod tests {
 
     }
 
-    // #[test]
-    // fn create_different_providers() {
-    //     // set up the mock context into the testing environment
-    //     let mut context = get_context(vec![], false, alice(), alice());
-    //     testing_env!(context);
-    //     // instantiate a contract variable
-    //     let mut fpo_contract = FPOContract::new();
-    //     fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
-    //     assert_eq!(U128(2500), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
-    //     // println!("predecessor_account_id = {}", env::predecessor_account_id());
+    #[test]
+    fn create_different_providers() {
+        // set up the mock context into the testing environment
+        let mut context = get_context(vec![], false, alice(), alice());
+        testing_env!(context);
 
-    //     context = get_context(vec![], false, bob(), bob());
-    //     testing_env!(context);
-    //     // println!("predecessor_account_id = {}", env::predecessor_account_id());
+        // instantiate a contract variable
+        let mut fpo_contract = FPOContract::new();
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
+        assert_eq!(U128(2500), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
 
+        // switch to bob as signer
+        context = get_context(vec![], false, bob(), bob());
+        testing_env!(context);
        
-    //     println!("Alice is a provider? {}", fpo_contract.pair_exists("ETH/USD".to_string(), alice()));
-    //     // println!("Bob is a provider? {}", fpo_contract.pair_exists("ETH/USD".to_string(), bob()));
-    //     println!("predecessor_account_id = {}", env::predecessor_account_id());
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2700));
+        assert_eq!(U128(2700), fpo_contract.get_entry("ETH/USD".to_string(), bob()).price);
+        assert_eq!(U128(2500), fpo_contract.get_entry("ETH/USD".to_string(), alice()).price);
 
-    //     fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2700));
-    //     // assert_eq!(U128(2700), fpo_contract.get_entry("ETH/USD".to_string(), bob()).price);
-    //     // assert_eq!(U128(2500), fpo_contract.get_entry("ETH/USD".to_string(), alice()).price);
-
-    //     // println!("{:?}", fpo_contract.get_provider_expect(&env::predecessor_account_id()));
-    //     // fpo_contract.push_data("ETH/USD".to_string(),  U128(3000));
+        fpo_contract.push_data("ETH/USD".to_string(),  U128(3000));
        
-    //     // assert_eq!(U128(3000), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
+        assert_eq!(U128(3000), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
 
-    // }
+    }
 
    
 }
