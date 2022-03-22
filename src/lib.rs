@@ -45,7 +45,7 @@ impl Provider {
     pub fn get_entry_expect(&self, pair: &String) -> PriceEntry {
         self.pairs
             .get(pair)
-            .expect("no price available for this pair")
+            .expect(format!("no price available for {}", pair).as_str())
     }
 
     /// Sets the fee for querying prices (not yet implemented)
@@ -94,14 +94,14 @@ impl FPOContract {
     pub fn create_pair(&mut self, pair: String, decimals: u16, initial_price: U128) {
         println!("+++predecessor_account_id = {}", env::predecessor_account_id());
         println!("+++current_account_id = {}", env::current_account_id());
-        assert!(self.providers.get(&env::current_account_id()).is_none(), "provider already exists");
+        assert!(self.providers.get(&env::predecessor_account_id()).is_none(), "provider already exists");
 
         let mut provider = self
             .providers
             .get(&env::predecessor_account_id())
             .unwrap_or_else(||Provider::new());
         
-        let pair_name = format!("{}-{}", pair, env::current_account_id());
+        let pair_name = format!("{}-{}", pair, env::predecessor_account_id());
         println!("PROVIDER PAIR: {:?}", &provider.pairs.get(&pair_name));
         assert!(provider.pairs.get(&pair_name).is_none(), "pair already exists");
         provider.pairs.insert(
@@ -133,7 +133,7 @@ impl FPOContract {
         let initial_storage_usage = env::storage_usage();
 
         let mut provider = self.get_provider_expect(&env::predecessor_account_id());
-        let pair_name = format!("{}-{}", pair, env::current_account_id());
+        let pair_name = format!("{}-{}", pair, env::predecessor_account_id());
         provider.set_price(pair_name, price);
         self.providers
             .insert(&env::predecessor_account_id(), &provider);
