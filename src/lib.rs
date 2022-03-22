@@ -147,24 +147,52 @@ impl FPOContract {
         self.get_provider_expect(&provider).get_entry_expect(&pair_name)
     }
 
-    /// Returns an average of prices given by specified pairs and providers
+    
+    // /// Returns an average of prices given by specified pairs and providers
+    // pub fn aggregate_avg(
+    //     &self,
+    //     pairs: Vec<String>,
+    //     providers: Vec<AccountId>,
+    //     min_last_update: WrappedTimestamp,
+    // ) -> U128 {
+    //     assert_eq!(
+    //         pairs.len(),
+    //         providers.len(),
+    //         "pairs and provider should be of equal length"
+    //     );
+    //     let min_last_update: u64 = min_last_update.into();
+    //     let mut amount_of_providers = providers.len();
+
+    //     let cum = pairs.iter().enumerate().fold(0, |s, (i, account_id)| {
+    //         let provider = self.get_provider_expect(&account_id);
+    //         let pair_name = format!("{}-{}", pairs[i], account_id);
+    //         let entry = provider.get_entry_expect(&pair_name);
+
+    //         // If this entry was updated after the min_last_update take it out of the average
+    //         if u64::from(entry.last_update) < min_last_update {
+    //             amount_of_providers -= 1;
+    //             return s;
+    //         } else {
+    //             return s + u128::from(entry.price);
+    //         }
+    //     });
+
+    //     U128(cum / amount_of_providers as u128)
+    // }
+
     pub fn aggregate_avg(
         &self,
-        pairs: Vec<String>,
+        pair: String,
         providers: Vec<AccountId>,
         min_last_update: WrappedTimestamp,
     ) -> U128 {
-        assert_eq!(
-            pairs.len(),
-            providers.len(),
-            "pairs and provider should be of equal length"
-        );
+     
         let min_last_update: u64 = min_last_update.into();
         let mut amount_of_providers = providers.len();
 
-        let cum = pairs.iter().enumerate().fold(0, |s, (i, account_id)| {
+        let cum = providers.iter().fold(0, |s, account_id| {
             let provider = self.get_provider_expect(&account_id);
-            let pair_name = format!("{}-{}", pairs[i], account_id);
+            let pair_name = format!("{}-{}", pair, account_id);
             let entry = provider.get_entry_expect(&pair_name);
 
             // If this entry was updated after the min_last_update take it out of the average
@@ -175,10 +203,62 @@ impl FPOContract {
                 return s + u128::from(entry.price);
             }
         });
+        println!("+++++++++AVERAGE: {:?}", U128(cum / amount_of_providers as u128));
 
         U128(cum / amount_of_providers as u128)
     }
 
+    pub fn aggregate_median(
+        &self,
+        pair: String,
+        providers: Vec<AccountId>,
+        min_last_update: WrappedTimestamp,
+    ) -> U128 {
+     
+        let min_last_update: u64 = min_last_update.into();
+        let mut amount_of_providers = providers.len();
+
+        let mut cum = providers.iter().fold(vec![], |mut arr: Vec<u128>, account_id| {
+            let provider = self.get_provider_expect(&account_id);
+            let pair_name = format!("{}-{}", pair, account_id);
+            let entry = provider.get_entry_expect(&pair_name);
+
+            // If this entry was updated after the min_last_update take it out of the average
+            if u64::from(entry.last_update) < min_last_update {
+                amount_of_providers -= 1;
+                return arr;
+            } else {
+                arr.push(u128::from(entry.price));
+                return arr;
+            }
+        });
+        println!("Aggregated prices array: {:?}", cum);
+        println!("Calculated median {:?}", self.median(&mut cum));
+        return self.median(&mut cum);
+       
+    }
+
+
+    pub fn mean(&self, numbers: &Vec<u128>) -> U128 {
+
+        let sum: u128 = numbers.iter().sum();
+    
+       U128::from( sum as u128 / numbers.len() as u128)
+    
+    }
+    pub fn median(&self, numbers: &mut Vec<u128>) -> U128 {
+
+        numbers.sort();
+    
+        let mid = numbers.len() / 2;
+        if numbers.len() % 2 == 0 {
+            return self.mean(&vec![numbers[mid - 1], numbers[mid]]) as U128
+        } else {
+            U128::from(numbers[mid])
+        }
+    
+    }
+    
     /// Returns multiple prices given by specified pairs and providers
     pub fn aggregate_collect(
         &self,
@@ -225,6 +305,7 @@ impl FPOContract {
 mod tests {
     use super::*;
     use near_sdk::MockedBlockchain;
+    use near_sdk::json_types::U64;
     use near_sdk::{testing_env, VMContext};
     fn alice() -> AccountId {
         "alice.near".to_string()
@@ -309,6 +390,59 @@ mod tests {
         assert_eq!(U128(3000), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
 
     }
+
+    #[test]
+    fn aggregate_avg() {
+        // set up the mock context into the testing environment
+        let mut context = get_context(vec![], false, alice(), alice());
+        testing_env!(context);
+
+        // instantiate a contract variable
+        let mut fpo_contract = FPOContract::new();
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2000));
+        assert_eq!(U128(2000), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
+
+        // switch to bob as signer
+        context = get_context(vec![], false, bob(), bob());
+        testing_env!(context);
+       
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
+        assert_eq!(U128(4000), fpo_contract.get_entry("ETH/USD".to_string(), bob()).price);
+        assert_eq!(U128(2000), fpo_contract.get_entry("ETH/USD".to_string(), alice()).price);
+
+
+        
+        assert_eq!(U128(3000), fpo_contract.aggregate_avg("ETH/USD".to_string(), vec![alice(), bob()], U64(0)));
+
+
+    }
+
+    #[test]
+    fn aggregate_median() {
+        // set up the mock context into the testing environment
+        let mut context = get_context(vec![], false, alice(), alice());
+        testing_env!(context);
+
+        // instantiate a contract variable
+        let mut fpo_contract = FPOContract::new();
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2000));
+        assert_eq!(U128(2000), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
+
+        // switch to bob as signer
+        context = get_context(vec![], false, bob(), bob());
+        testing_env!(context);
+       
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
+        assert_eq!(U128(4000), fpo_contract.get_entry("ETH/USD".to_string(), bob()).price);
+        assert_eq!(U128(2000), fpo_contract.get_entry("ETH/USD".to_string(), alice()).price);
+
+
+        println!("MEDIAAANN{:?}", fpo_contract.aggregate_median("ETH/USD".to_string(), vec![alice(), bob()], U64(0)));
+        assert_eq!(U128(3000), fpo_contract.aggregate_median("ETH/USD".to_string(), vec![alice(), bob()], U64(0)));
+
+
+    }
+
 
    
 }
