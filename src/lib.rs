@@ -83,8 +83,6 @@ impl FPOContract {
         provider.set_price(pair_name, price, env::block_timestamp().into());
         self.providers
             .insert(&env::predecessor_account_id(), &provider);
-        
-        utils::refund_storage(initial_storage_usage, env::predecessor_account_id());
     }
 
     /// Returns all data associated with a price pair by a provider
