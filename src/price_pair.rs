@@ -46,6 +46,22 @@ impl FPOContract {
             .get_entry_option(&pair_name)
     }
 
+    /// Returns all the data associated with multiple price pairs by associated providers
+    pub fn get_entries(&self, pairs: Vec<String>, providers: Vec<AccountId>) -> Vec<PriceEntry> {
+        assert_eq!(
+            pairs.len(),
+            providers.len(),
+            "pairs and provider should be of equal length"
+        );
+
+        let mut entries = vec![];
+        for (i, provider) in providers.iter().enumerate() {
+            let pair_name = format!("{}-{}", pairs[i], provider);
+            entries.push(self.get_provider_expect(provider).get_entry_expect(&pair_name));
+        }
+        entries
+    }
+
     /// Checks if a given price pair exists
     pub fn pair_exists(&self, pair: String, provider: AccountId) -> bool {
         let pair_name = format!("{}-{}", pair, provider);
@@ -99,10 +115,8 @@ mod tests {
 
     #[test]
     fn create_pair() {
-        // set up the mock context into the testing environment
         let context = get_context(vec![], false, alice(), alice());
         testing_env!(context);
-        // instantiate a contract variable
         let mut fpo_contract = FPOContract::new();
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
         assert_eq!(
@@ -113,10 +127,8 @@ mod tests {
 
     #[test]
     fn create_diff_pairs() {
-        // set up the mock context into the testing environment
         let context = get_context(vec![], false, alice(), alice());
         testing_env!(context);
-        // instantiate a contract variable
         let mut fpo_contract = FPOContract::new();
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
         assert_eq!(
@@ -129,15 +141,25 @@ mod tests {
             true,
             fpo_contract.pair_exists("BTC/USD".to_string(), env::predecessor_account_id())
         );
+
+        assert_eq!(
+            vec![U128(2500), U128(42000)],
+            fpo_contract
+                .get_entries(
+                    vec!["ETH/USD".to_string(), "BTC/USD".to_string()],
+                    vec![env::predecessor_account_id(), env::predecessor_account_id()]
+                )
+                .iter()
+                .map(|entry| entry.price)
+                .collect::<Vec<U128>>()
+        )
     }
 
     #[test]
     #[should_panic]
     fn create_same_pair() {
-        // set up the mock context into the testing environment
         let context = get_context(vec![], false, alice(), alice());
         testing_env!(context);
-        // instantiate a contract variable
         let mut fpo_contract = FPOContract::new();
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
         assert_eq!(
@@ -150,10 +172,8 @@ mod tests {
 
     #[test]
     fn push_data() {
-        // set up the mock context into the testing environment
         let context = get_context(vec![], false, alice(), alice());
         testing_env!(context);
-        // instantiate a contract variable
         let mut fpo_contract = FPOContract::new();
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
         assert_eq!(
@@ -177,11 +197,9 @@ mod tests {
 
     #[test]
     fn push_data_multiple_providers() {
-        // set up the mock context into the testing environment
         let mut context = get_context(vec![], false, alice(), alice());
         testing_env!(context);
 
-        // instantiate a contract variable
         let mut fpo_contract = FPOContract::new();
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
         assert_eq!(

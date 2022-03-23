@@ -151,11 +151,9 @@ mod tests {
 
     #[test]
     fn aggregate_avg() {
-        // set up the mock context into the testing environment
         let mut context = get_context(vec![], false, alice(), alice());
         testing_env!(context);
 
-        // instantiate a contract variable
         let mut fpo_contract = FPOContract::new();
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2000));
         assert_eq!(
@@ -196,11 +194,9 @@ mod tests {
     #[test]
     fn aggregate_median() {
         let pair = "ETH/USD".to_string();
-        // set up the mock context into the testing environment
         let mut context = get_context(vec![], false, alice(), alice());
         testing_env!(context);
 
-        // instantiate a contract variable
         let mut fpo_contract = FPOContract::new();
         fpo_contract.create_pair(pair.clone(), 8, U128(2000));
         assert_eq!(
