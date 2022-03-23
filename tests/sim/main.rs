@@ -51,7 +51,6 @@ fn simulate_create_pair() {
     );
 }
 
-
 #[test]
 fn simulate_create_smae_pair() {
     let (root, fpo) = init();
@@ -62,7 +61,6 @@ fn simulate_create_smae_pair() {
 
     let err = call!(root, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))).promise_errors();
     println!("ERROR: {:?}", err);
-    
 }
 
 #[test]
@@ -155,7 +153,6 @@ fn simulate_different_providers() {
     );
 }
 
-
 #[test]
 fn simulate_different_pairs() {
     let (root, fpo) = init();
@@ -171,7 +168,11 @@ fn simulate_different_pairs() {
     .assert_success();
 
     // create another price pair from bob
-    call!(bob, fpo.create_pair("BTC / USD".to_string(), 8, U128(45000))).assert_success();
+    call!(
+        bob,
+        fpo.create_pair("BTC / USD".to_string(), 8, U128(45000))
+    )
+    .assert_success();
     call!(
         bob,
         fpo.pair_exists("BTC / USD".to_string(), bob.account_id())
@@ -179,7 +180,10 @@ fn simulate_different_pairs() {
     .assert_success();
 
     // output and check bob's data
-    let price_entry = call!(bob, fpo.get_entry("ETH / USD".to_string(), bob.account_id()));
+    let price_entry = call!(
+        bob,
+        fpo.get_entry("ETH / USD".to_string(), bob.account_id())
+    );
     println!(
         "Returned Price: {:?}",
         &price_entry.unwrap_json_value()["price"].to_owned()
@@ -190,7 +194,10 @@ fn simulate_different_pairs() {
     );
 
     // output and check bob's data
-    let price_entry = call!(bob, fpo.get_entry("BTC / USD".to_string(), bob.account_id()));
+    let price_entry = call!(
+        bob,
+        fpo.get_entry("BTC / USD".to_string(), bob.account_id())
+    );
     println!(
         "Returned Price: {:?}",
         &price_entry.unwrap_json_value()["price"].to_owned()
@@ -199,8 +206,6 @@ fn simulate_different_pairs() {
         &price_entry.unwrap_json_value()["price"].to_owned(),
         &"45000".to_string()
     );
-
-  
 }
 
 #[test]
@@ -222,14 +227,26 @@ fn simulate_agg_avg() {
     // create a price pair from carol
     let carol = root.create_user("carol".to_string(), to_yocto("1000000"));
     call!(carol, fpo.create_pair("ETH/USD".to_string(), 8, U128(3000))).assert_success();
- 
-    
 
     // find the average of the four
-    let pairs = vec!["ETH/USD".to_string(), "ETH/USD".to_string(), "ETH/USD".to_string(), "ETH/USD".to_string()];
+    let pairs = vec![
+        "ETH/USD".to_string(),
+        "ETH/USD".to_string(),
+        "ETH/USD".to_string(),
+        "ETH/USD".to_string(),
+    ];
     let avg = call!(
         bob,
-        fpo.aggregate_avg(pairs, vec![root.account_id(), bob.account_id(), alice.account_id(), carol.account_id()], U64(0))
+        fpo.aggregate_avg(
+            pairs,
+            vec![
+                root.account_id(),
+                bob.account_id(),
+                alice.account_id(),
+                carol.account_id()
+            ],
+            U64(0)
+        )
     );
 
     // output and check the data
@@ -257,14 +274,26 @@ fn simulate_agg_median() {
     let carol = root.create_user("carol".to_string(), to_yocto("1000000"));
     call!(carol, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))).assert_success();
 
-   
     // find the median of the four
-    let pairs = vec!["ETH/USD".to_string(), "ETH/USD".to_string(), "ETH/USD".to_string(), "ETH/USD".to_string()];
+    let pairs = vec![
+        "ETH/USD".to_string(),
+        "ETH/USD".to_string(),
+        "ETH/USD".to_string(),
+        "ETH/USD".to_string(),
+    ];
     let median = call!(
         bob,
-        fpo.aggregate_median(pairs, vec![root.account_id(), bob.account_id(), alice.account_id(), carol.account_id()], U64(0))
+        fpo.aggregate_median(
+            pairs,
+            vec![
+                root.account_id(),
+                bob.account_id(),
+                alice.account_id(),
+                carol.account_id()
+            ],
+            U64(0)
+        )
     );
-
 
     // output and check the data
     println!("Returned MEDIAN: {:?}", &median.unwrap_json_value());
@@ -291,14 +320,26 @@ fn simulate_agg_median_diff_ids() {
     let carol = root.create_user("carol".to_string(), to_yocto("1000000"));
     call!(carol, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))).assert_success();
 
-   
     // find the median of the four
-    let pairs = vec!["ETH-USD".to_string(), "ETH / USD".to_string(), "ETH/USD".to_string(), "ETH/USD".to_string()];
+    let pairs = vec![
+        "ETH-USD".to_string(),
+        "ETH / USD".to_string(),
+        "ETH/USD".to_string(),
+        "ETH/USD".to_string(),
+    ];
     let median = call!(
         bob,
-        fpo.aggregate_median(pairs, vec![root.account_id(), bob.account_id(), alice.account_id(), carol.account_id()], U64(0))
+        fpo.aggregate_median(
+            pairs,
+            vec![
+                root.account_id(),
+                bob.account_id(),
+                alice.account_id(),
+                carol.account_id()
+            ],
+            U64(0)
+        )
     );
-
 
     // output and check the data
     println!("Returned MEDIAN: {:?}", &median.unwrap_json_value());
