@@ -6,7 +6,7 @@ use near_sdk::serde::{Deserialize, Serialize};
 pub struct PriceEntry {
     pub price: U128,                   // Last reported price
     pub decimals: u16,                 // Amount of decimals (e.g. if 2, 100 = 1.00)
-    pub last_update: WrappedTimestamp, // Time or report
+    pub last_update: WrappedTimestamp, // Time of report
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
@@ -58,7 +58,7 @@ impl Provider {
 
 /// Private contract methods
 impl FPOContract {
-    /// Returns all the data associated with a provider
+    /// Returns all the data associated with a provider (non-serializable because LookupMap)
     pub fn get_provider_expect(&self, account_id: &AccountId) -> Provider {
         self.providers
             .get(account_id)

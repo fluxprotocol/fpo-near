@@ -1,6 +1,6 @@
 mod aggregate;
 mod math;
-mod pair;
+mod price_pair;
 mod provider;
 mod storage_manager;
 use crate::provider::{PriceEntry, Provider};
