@@ -199,143 +199,143 @@ impl FPOContract {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use near_sdk::MockedBlockchain;
-//     use near_sdk::json_types::U64;
-//     use near_sdk::{testing_env, VMContext};
-//     fn alice() -> AccountId {
-//         "alice.near".to_string()
-//     }
-//     fn bob() -> AccountId {
-//         "bob.near".to_string()
-//     }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use near_sdk::MockedBlockchain;
+    use near_sdk::json_types::U64;
+    use near_sdk::{testing_env, VMContext};
+    fn alice() -> AccountId {
+        "alice.near".to_string()
+    }
+    fn bob() -> AccountId {
+        "bob.near".to_string()
+    }
 
-//     // part of writing unit tests is setting up a mock context
-//     // in this example, this is only needed for env::log in the contract
-//     // this is also a useful list to peek at when wondering what's available in env::*
-//     fn get_context(input: Vec<u8>, is_view: bool, predecessor_account_id: AccountId, current_account_id: AccountId) -> VMContext {
-//         VMContext {
-//             current_account_id,
-//             signer_account_id: "robert.testnet".to_string(),
-//             signer_account_pk: vec![0, 1, 2],
-//             predecessor_account_id,
-//             input,
-//             block_index: 0,
-//             block_timestamp: 0,
-//             account_balance: 0,
-//             account_locked_balance: 0,
-//             storage_usage: 0,
-//             attached_deposit: 0,
-//             prepaid_gas: 10u64.pow(18),
-//             random_seed: vec![0, 1, 2],
-//             is_view,
-//             output_data_receivers: vec![],
-//             epoch_height: 19,
-//         }
-//     }
+    // part of writing unit tests is setting up a mock context
+    // in this example, this is only needed for env::log in the contract
+    // this is also a useful list to peek at when wondering what's available in env::*
+    fn get_context(input: Vec<u8>, is_view: bool, predecessor_account_id: AccountId, current_account_id: AccountId) -> VMContext {
+        VMContext {
+            current_account_id,
+            signer_account_id: "robert.testnet".to_string(),
+            signer_account_pk: vec![0, 1, 2],
+            predecessor_account_id,
+            input,
+            block_index: 0,
+            block_timestamp: 0,
+            account_balance: 0,
+            account_locked_balance: 0,
+            storage_usage: 0,
+            attached_deposit: 0,
+            prepaid_gas: 10u64.pow(18),
+            random_seed: vec![0, 1, 2],
+            is_view,
+            output_data_receivers: vec![],
+            epoch_height: 19,
+        }
+    }
 
-//     // mark individual unit tests with #[test] for them to be registered and fired
-//     #[test]
-//     fn create_pair() {
-//         // set up the mock context into the testing environment
-//         let context = get_context(vec![], false, alice(), alice());
-//         testing_env!(context);
-//         // instantiate a contract variable
-//         let mut fpo_contract = FPOContract::new();
-//         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
-//         assert_eq!(true, fpo_contract.pair_exists("ETH/USD".to_string(), env::predecessor_account_id()));
-//     }
+    // mark individual unit tests with #[test] for them to be registered and fired
+    #[test]
+    fn create_pair() {
+        // set up the mock context into the testing environment
+        let context = get_context(vec![], false, alice(), alice());
+        testing_env!(context);
+        // instantiate a contract variable
+        let mut fpo_contract = FPOContract::new();
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
+        assert_eq!(true, fpo_contract.pair_exists("ETH/USD".to_string(), env::predecessor_account_id()));
+    }
 
-//     #[test]
-//     fn push_data() {
-//         // set up the mock context into the testing environment
-//         let context = get_context(vec![], false, alice(), alice());
-//         testing_env!(context);
-//         // instantiate a contract variable
-//         let mut fpo_contract = FPOContract::new();
-//         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
-//         assert_eq!(U128(2500), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
+    #[test]
+    fn push_data() {
+        // set up the mock context into the testing environment
+        let context = get_context(vec![], false, alice(), alice());
+        testing_env!(context);
+        // instantiate a contract variable
+        let mut fpo_contract = FPOContract::new();
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
+        assert_eq!(U128(2500), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
 
-//         fpo_contract.push_data("ETH/USD".to_string(),  U128(3000));
+        fpo_contract.push_data("ETH/USD".to_string(),  U128(3000));
        
-//         assert_eq!(U128(3000), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
+        assert_eq!(U128(3000), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
 
-//     }
+    }
 
-//     #[test]
-//     fn create_different_providers() {
-//         // set up the mock context into the testing environment
-//         let mut context = get_context(vec![], false, alice(), alice());
-//         testing_env!(context);
+    #[test]
+    fn create_different_providers() {
+        // set up the mock context into the testing environment
+        let mut context = get_context(vec![], false, alice(), alice());
+        testing_env!(context);
 
-//         // instantiate a contract variable
-//         let mut fpo_contract = FPOContract::new();
-//         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
-//         assert_eq!(U128(2500), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
+        // instantiate a contract variable
+        let mut fpo_contract = FPOContract::new();
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
+        assert_eq!(U128(2500), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
 
-//         // switch to bob as signer
-//         context = get_context(vec![], false, bob(), bob());
-//         testing_env!(context);
+        // switch to bob as signer
+        context = get_context(vec![], false, bob(), bob());
+        testing_env!(context);
        
-//         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2700));
-//         assert_eq!(U128(2700), fpo_contract.get_entry("ETH/USD".to_string(), bob()).price);
-//         assert_eq!(U128(2500), fpo_contract.get_entry("ETH/USD".to_string(), alice()).price);
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2700));
+        assert_eq!(U128(2700), fpo_contract.get_entry("ETH/USD".to_string(), bob()).price);
+        assert_eq!(U128(2500), fpo_contract.get_entry("ETH/USD".to_string(), alice()).price);
 
-//         fpo_contract.push_data("ETH/USD".to_string(),  U128(3000));
+        fpo_contract.push_data("ETH/USD".to_string(),  U128(3000));
        
-//         assert_eq!(U128(3000), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
+        assert_eq!(U128(3000), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
 
-//     }
+    }
 
-//     #[test]
-//     fn aggregate_avg() {
-//         // set up the mock context into the testing environment
-//         let mut context = get_context(vec![], false, alice(), alice());
-//         testing_env!(context);
+    #[test]
+    fn aggregate_avg() {
+        // set up the mock context into the testing environment
+        let mut context = get_context(vec![], false, alice(), alice());
+        testing_env!(context);
 
-//         // instantiate a contract variable
-//         let mut fpo_contract = FPOContract::new();
-//         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2000));
-//         assert_eq!(U128(2000), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
+        // instantiate a contract variable
+        let mut fpo_contract = FPOContract::new();
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2000));
+        assert_eq!(U128(2000), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
 
-//         // switch to bob as signer
-//         context = get_context(vec![], false, bob(), bob());
-//         testing_env!(context);
+        // switch to bob as signer
+        context = get_context(vec![], false, bob(), bob());
+        testing_env!(context);
        
-//         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
-//         assert_eq!(U128(4000), fpo_contract.get_entry("ETH/USD".to_string(), bob()).price);
-//         assert_eq!(U128(2000), fpo_contract.get_entry("ETH/USD".to_string(), alice()).price);
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
+        assert_eq!(U128(4000), fpo_contract.get_entry("ETH/USD".to_string(), bob()).price);
+        assert_eq!(U128(2000), fpo_contract.get_entry("ETH/USD".to_string(), alice()).price);
 
 
-//         let pairs = vec!["ETH/USD".to_string(), "ETH/USD".to_string()];
-//         assert_eq!(U128(3000), fpo_contract.aggregate_avg(pairs, vec![alice(), bob()], U64(0)));
+        let pairs = vec!["ETH/USD".to_string(), "ETH/USD".to_string()];
+        assert_eq!(U128(3000), fpo_contract.aggregate_avg(pairs, vec![alice(), bob()], U64(0)));
 
 
-//     }
+    }
 
-//     #[test]
-//     fn aggregate_median() {
-//         let pair = "ETH/USD".to_string();
-//         // set up the mock context into the testing environment
-//         let mut context = get_context(vec![], false, alice(), alice());
-//         testing_env!(context);
+    #[test]
+    fn aggregate_median() {
+        let pair = "ETH/USD".to_string();
+        // set up the mock context into the testing environment
+        let mut context = get_context(vec![], false, alice(), alice());
+        testing_env!(context);
 
-//         // instantiate a contract variable
-//         let mut fpo_contract = FPOContract::new();
-//         fpo_contract.create_pair(pair.clone(), 8, U128(2000));
-//         assert_eq!(U128(2000), fpo_contract.get_entry(pair.clone(), env::predecessor_account_id()).price);
+        // instantiate a contract variable
+        let mut fpo_contract = FPOContract::new();
+        fpo_contract.create_pair(pair.clone(), 8, U128(2000));
+        assert_eq!(U128(2000), fpo_contract.get_entry(pair.clone(), env::predecessor_account_id()).price);
 
-//         // switch to bob as signer
-//         context = get_context(vec![], false, bob(), bob());
-//         testing_env!(context);
+        // switch to bob as signer
+        context = get_context(vec![], false, bob(), bob());
+        testing_env!(context);
        
-//         fpo_contract.create_pair(pair.clone(), 8, U128(4000));
-//         assert_eq!(U128(4000), fpo_contract.get_entry(pair.clone(), bob()).price);
-//         assert_eq!(U128(2000), fpo_contract.get_entry(pair.clone(), alice()).price);
+        fpo_contract.create_pair(pair.clone(), 8, U128(4000));
+        assert_eq!(U128(4000), fpo_contract.get_entry(pair.clone(), bob()).price);
+        assert_eq!(U128(2000), fpo_contract.get_entry(pair.clone(), alice()).price);
 
-//         let pairs = vec![pair.clone(), pair];
-//         assert_eq!(U128(3000), fpo_contract.aggregate_median(pairs, vec![alice(), bob()], U64(0)));
-//     }
-// }
+        let pairs = vec![pair.clone(), pair];
+        assert_eq!(U128(3000), fpo_contract.aggregate_median(pairs, vec![alice(), bob()], U64(0)));
+    }
+}
