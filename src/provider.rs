@@ -1,11 +1,10 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::json_types::{U64, U128, WrappedTimestamp};
 use near_sdk::collections::LookupMap;
+use near_sdk::json_types::{WrappedTimestamp, U128, U64};
+use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::BorshStorageKey;
 
-#[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize)]
-#[derive(Debug)]
+#[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Debug)]
 pub struct PriceEntry {
     pub price: U128,                   // Last reported price
     pub decimals: u16,                 // Amount of decimals (e.g. if 2, 100 = 1.00)
@@ -27,7 +26,7 @@ impl Provider {
     pub fn new() -> Self {
         Self {
             query_fee: 0,
-            pairs: LookupMap::new(ProviderStorageKeys::Pairs)
+            pairs: LookupMap::new(ProviderStorageKeys::Pairs),
         }
     }
 

@@ -1,7 +1,7 @@
 use super::*;
 use near_sdk::json_types::{ValidAccountId, U128};
 use near_sdk::serde::Serialize;
-use near_sdk::{Promise, Balance};
+use near_sdk::{Balance, Promise};
 
 /// Price per 1 byte of storage from mainnet config after `0.18` release and protocol version `42`.
 /// It's 10 times lower than the genesis price.
