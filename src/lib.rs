@@ -122,6 +122,8 @@ impl FPOContract {
                 s + u128::from(entry.price)
             }
         });
+        println!("SUM OF PRICES{}", cumulative);
+        println!("amount_of_providers{}", amount_of_providers);
 
         U128(cumulative / amount_of_providers as u128)
     }
@@ -217,6 +219,12 @@ mod tests {
     fn bob() -> AccountId {
         "bob.near".to_string()
     }
+    fn carol() -> AccountId {
+        "carol.near".to_string()
+    }
+    fn dina() -> AccountId {
+        "dina.near".to_string()
+    }
 
     // part of writing unit tests is setting up a mock context
     // in this example, this is only needed for env::log in the contract
@@ -297,7 +305,7 @@ mod tests {
             true,
             fpo_contract.pair_exists("ETH/USD".to_string(), env::predecessor_account_id())
         );
-        
+
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
 
 
@@ -371,76 +379,112 @@ mod tests {
 
     #[test]
     fn aggregate_avg() {
-        // set up the mock context into the testing environment
+        // alice is the signer
         let mut context = get_context(vec![], false, alice(), alice());
         testing_env!(context);
 
         // instantiate a contract variable
         let mut fpo_contract = FPOContract::new();
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2000));
-        assert_eq!(
-            U128(2000),
-            fpo_contract
-                .get_entry("ETH/USD".to_string(), env::predecessor_account_id())
-                .price
-        );
-
+       
         // switch to bob as signer
         context = get_context(vec![], false, bob(), bob());
         testing_env!(context);
 
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
-        assert_eq!(
-            U128(4000),
-            fpo_contract.get_entry("ETH/USD".to_string(), bob()).price
-        );
+
+
+        // switch to carol as signer
+        context = get_context(vec![], false, carol(), carol());
+        testing_env!(context);
+
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
+        
+        // switch to dina as signer
+        context = get_context(vec![], false, dina(), dina());
+        testing_env!(context);
+
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
+
         assert_eq!(
             U128(2000),
             fpo_contract.get_entry("ETH/USD".to_string(), alice()).price
         );
 
-        let pairs = vec!["ETH/USD".to_string(), "ETH/USD".to_string()];
         assert_eq!(
-            U128(3000),
-            fpo_contract.aggregate_avg(pairs, vec![alice(), bob()], U64(0))
+            U128(4000),
+            fpo_contract.get_entry("ETH/USD".to_string(), bob()).price
+        );
+
+        assert_eq!(
+            U128(4000),
+            fpo_contract.get_entry("ETH/USD".to_string(), carol()).price
+        );
+        assert_eq!(
+            U128(4000),
+            fpo_contract.get_entry("ETH/USD".to_string(), carol()).price
+        );
+
+        let pairs = vec!["ETH/USD".to_string(), "ETH/USD".to_string(),"ETH/USD".to_string(), "ETH/USD".to_string()];
+        assert_eq!(
+            U128(3500),
+            fpo_contract.aggregate_avg(pairs, vec![alice(), bob(), carol(), dina()], U64(0))
         );
     }
 
     #[test]
     fn aggregate_median() {
-        let pair = "ETH/USD".to_string();
-        // set up the mock context into the testing environment
+        // alice is the signer
         let mut context = get_context(vec![], false, alice(), alice());
         testing_env!(context);
 
         // instantiate a contract variable
         let mut fpo_contract = FPOContract::new();
-        fpo_contract.create_pair(pair.clone(), 8, U128(2000));
-        assert_eq!(
-            U128(2000),
-            fpo_contract
-                .get_entry(pair.clone(), env::predecessor_account_id())
-                .price
-        );
-
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2000));
+        
         // switch to bob as signer
         context = get_context(vec![], false, bob(), bob());
         testing_env!(context);
 
-        fpo_contract.create_pair(pair.clone(), 8, U128(4000));
-        assert_eq!(
-            U128(4000),
-            fpo_contract.get_entry(pair.clone(), bob()).price
-        );
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2000));
+
+
+        // switch to carol as signer
+        context = get_context(vec![], false, carol(), carol());
+        testing_env!(context);
+
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
+
+        // switch to dina as signer
+        context = get_context(vec![], false, dina(), dina());
+        testing_env!(context);
+
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
+ 
+
         assert_eq!(
             U128(2000),
-            fpo_contract.get_entry(pair.clone(), alice()).price
+            fpo_contract.get_entry("ETH/USD".to_string(), alice()).price
         );
 
-        let pairs = vec![pair.clone(), pair];
+        assert_eq!(
+            U128(2000),
+            fpo_contract.get_entry("ETH/USD".to_string(), bob()).price
+        );
+
+        assert_eq!(
+            U128(4000),
+            fpo_contract.get_entry("ETH/USD".to_string(), carol()).price
+        );
+        assert_eq!(
+            U128(4000),
+            fpo_contract.get_entry("ETH/USD".to_string(), dina()).price
+        );
+
+        let pairs = vec!["ETH/USD".to_string(), "ETH/USD".to_string(),"ETH/USD".to_string(),"ETH/USD".to_string() ];
         assert_eq!(
             U128(3000),
-            fpo_contract.aggregate_median(pairs, vec![alice(), bob()], U64(0))
+            fpo_contract.aggregate_median(pairs, vec![alice(), bob(), carol(), dina()], U64(0))
         );
     }
 }
