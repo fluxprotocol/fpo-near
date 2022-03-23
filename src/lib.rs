@@ -1,11 +1,9 @@
-mod utils;
 mod provider;
 mod storage_manager;
-use std::fmt::Debug;
-use crate::provider::{Provider, PriceEntry};
+mod utils;
+use crate::provider::{PriceEntry, Provider};
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::collections::LookupMap;
 use near_sdk::json_types::{WrappedTimestamp, U128};
 use near_sdk::{env, near_bindgen, AccountId, BorshStorageKey, PanicOnDefault};
@@ -24,7 +22,7 @@ pub struct FPOContract {
 #[derive(BorshStorageKey, BorshSerialize)]
 enum FPOStorageKeys {
     Providers,
-    Accounts
+    Accounts,
 }
 
 /// PUBLIC CONTRACT METHODS
@@ -34,22 +32,28 @@ impl FPOContract {
     pub fn new() -> Self {
         Self {
             providers: LookupMap::new(FPOStorageKeys::Providers),
-            accounts: LookupMap::new(FPOStorageKeys::Accounts)
+            accounts: LookupMap::new(FPOStorageKeys::Accounts),
         }
     }
 
     /// Creates a new price pair by a provider
     #[payable]
     pub fn create_pair(&mut self, pair: String, decimals: u16, initial_price: U128) {
-        assert!(self.providers.get(&env::predecessor_account_id()).is_none(), "provider already exists");
+        assert!(
+            self.providers.get(&env::predecessor_account_id()).is_none(),
+            "provider already exists"
+        );
 
         let mut provider = self
             .providers
             .get(&env::predecessor_account_id())
-            .unwrap_or_else(||Provider::new());
-        
+            .unwrap_or_else(|| Provider::new());
+
         let pair_name = format!("{}-{}", pair, env::predecessor_account_id());
-        assert!(provider.pairs.get(&pair_name).is_none(), "pair already exists");
+        assert!(
+            provider.pairs.get(&pair_name).is_none(),
+            "pair already exists"
+        );
         provider.pairs.insert(
             &pair_name,
             &PriceEntry {
@@ -61,7 +65,6 @@ impl FPOContract {
 
         self.providers
             .insert(&env::predecessor_account_id(), &provider);
-
     }
 
     /// Checks if a given price pair exists
@@ -76,8 +79,6 @@ impl FPOContract {
     /// Sets the price for a given price pair by a provider
     #[payable]
     pub fn push_data(&mut self, pair: String, price: U128) {
-        let initial_storage_usage = env::storage_usage();
-
         let mut provider = self.get_provider_expect(&env::predecessor_account_id());
         let pair_name = format!("{}-{}", pair, env::predecessor_account_id());
         provider.set_price(pair_name, price, env::block_timestamp().into());
@@ -88,7 +89,8 @@ impl FPOContract {
     /// Returns all data associated with a price pair by a provider
     pub fn get_entry(&self, pair: String, provider: AccountId) -> PriceEntry {
         let pair_name = format!("{}-{}", pair, provider);
-        self.get_provider_expect(&provider).get_entry_expect(&pair_name)
+        self.get_provider_expect(&provider)
+            .get_entry_expect(&pair_name)
     }
 
     /// Returns the mean of given price pairs from given providers
@@ -103,7 +105,7 @@ impl FPOContract {
             providers.len(),
             "pairs and provider should be of equal length"
         );
-     
+
         let min_last_update: u64 = min_last_update.into();
         let mut amount_of_providers = providers.len();
 
@@ -136,27 +138,31 @@ impl FPOContract {
             providers.len(),
             "pairs and provider should be of equal length"
         );
-     
+
         let min_last_update: u64 = min_last_update.into();
         let mut amount_of_providers = providers.len();
 
-        let mut cumulative = providers.iter().enumerate().fold(vec![], |mut arr: Vec<u128>, (i, account_id)| {
-            let provider = self.get_provider_expect(&account_id);
-            let pair_name = format!("{}-{}", pairs[i], account_id);
-            let entry = provider.get_entry_expect(&pair_name);
+        let mut cumulative =
+            providers
+                .iter()
+                .enumerate()
+                .fold(vec![], |mut arr: Vec<u128>, (i, account_id)| {
+                    let provider = self.get_provider_expect(&account_id);
+                    let pair_name = format!("{}-{}", pairs[i], account_id);
+                    let entry = provider.get_entry_expect(&pair_name);
 
-            // If this entry was updated after the min_last_update take it out of the average
-            if u64::from(entry.last_update) < min_last_update {
-                amount_of_providers -= 1;
-                return arr;
-            } else {
-                arr.push(u128::from(entry.price));
-                return arr;
-            }
-        });
+                    // If this entry was updated after the min_last_update take it out of the average
+                    if u64::from(entry.last_update) < min_last_update {
+                        amount_of_providers -= 1;
+                        return arr;
+                    } else {
+                        arr.push(u128::from(entry.price));
+                        return arr;
+                    }
+                });
         utils::median(&mut cumulative)
     }
-    
+
     /// Returns multiple prices given by specified pairs and providers
     pub fn aggregate_collect(
         &self,
@@ -202,8 +208,8 @@ impl FPOContract {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use near_sdk::MockedBlockchain;
     use near_sdk::json_types::U64;
+    use near_sdk::MockedBlockchain;
     use near_sdk::{testing_env, VMContext};
     fn alice() -> AccountId {
         "alice.near".to_string()
@@ -215,7 +221,12 @@ mod tests {
     // part of writing unit tests is setting up a mock context
     // in this example, this is only needed for env::log in the contract
     // this is also a useful list to peek at when wondering what's available in env::*
-    fn get_context(input: Vec<u8>, is_view: bool, predecessor_account_id: AccountId, current_account_id: AccountId) -> VMContext {
+    fn get_context(
+        input: Vec<u8>,
+        is_view: bool,
+        predecessor_account_id: AccountId,
+        current_account_id: AccountId,
+    ) -> VMContext {
         VMContext {
             current_account_id,
             signer_account_id: "robert.testnet".to_string(),
@@ -245,7 +256,10 @@ mod tests {
         // instantiate a contract variable
         let mut fpo_contract = FPOContract::new();
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
-        assert_eq!(true, fpo_contract.pair_exists("ETH/USD".to_string(), env::predecessor_account_id()));
+        assert_eq!(
+            true,
+            fpo_contract.pair_exists("ETH/USD".to_string(), env::predecessor_account_id())
+        );
     }
 
     #[test]
@@ -256,12 +270,21 @@ mod tests {
         // instantiate a contract variable
         let mut fpo_contract = FPOContract::new();
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
-        assert_eq!(U128(2500), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
+        assert_eq!(
+            U128(2500),
+            fpo_contract
+                .get_entry("ETH/USD".to_string(), env::predecessor_account_id())
+                .price
+        );
 
-        fpo_contract.push_data("ETH/USD".to_string(),  U128(3000));
-       
-        assert_eq!(U128(3000), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
+        fpo_contract.push_data("ETH/USD".to_string(), U128(3000));
 
+        assert_eq!(
+            U128(3000),
+            fpo_contract
+                .get_entry("ETH/USD".to_string(), env::predecessor_account_id())
+                .price
+        );
     }
 
     #[test]
@@ -273,20 +296,35 @@ mod tests {
         // instantiate a contract variable
         let mut fpo_contract = FPOContract::new();
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
-        assert_eq!(U128(2500), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
+        assert_eq!(
+            U128(2500),
+            fpo_contract
+                .get_entry("ETH/USD".to_string(), env::predecessor_account_id())
+                .price
+        );
 
         // switch to bob as signer
         context = get_context(vec![], false, bob(), bob());
         testing_env!(context);
-       
+
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2700));
-        assert_eq!(U128(2700), fpo_contract.get_entry("ETH/USD".to_string(), bob()).price);
-        assert_eq!(U128(2500), fpo_contract.get_entry("ETH/USD".to_string(), alice()).price);
+        assert_eq!(
+            U128(2700),
+            fpo_contract.get_entry("ETH/USD".to_string(), bob()).price
+        );
+        assert_eq!(
+            U128(2500),
+            fpo_contract.get_entry("ETH/USD".to_string(), alice()).price
+        );
 
-        fpo_contract.push_data("ETH/USD".to_string(),  U128(3000));
-       
-        assert_eq!(U128(3000), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
+        fpo_contract.push_data("ETH/USD".to_string(), U128(3000));
 
+        assert_eq!(
+            U128(3000),
+            fpo_contract
+                .get_entry("ETH/USD".to_string(), env::predecessor_account_id())
+                .price
+        );
     }
 
     #[test]
@@ -298,21 +336,32 @@ mod tests {
         // instantiate a contract variable
         let mut fpo_contract = FPOContract::new();
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2000));
-        assert_eq!(U128(2000), fpo_contract.get_entry("ETH/USD".to_string(), env::predecessor_account_id()).price);
+        assert_eq!(
+            U128(2000),
+            fpo_contract
+                .get_entry("ETH/USD".to_string(), env::predecessor_account_id())
+                .price
+        );
 
         // switch to bob as signer
         context = get_context(vec![], false, bob(), bob());
         testing_env!(context);
-       
-        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
-        assert_eq!(U128(4000), fpo_contract.get_entry("ETH/USD".to_string(), bob()).price);
-        assert_eq!(U128(2000), fpo_contract.get_entry("ETH/USD".to_string(), alice()).price);
 
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
+        assert_eq!(
+            U128(4000),
+            fpo_contract.get_entry("ETH/USD".to_string(), bob()).price
+        );
+        assert_eq!(
+            U128(2000),
+            fpo_contract.get_entry("ETH/USD".to_string(), alice()).price
+        );
 
         let pairs = vec!["ETH/USD".to_string(), "ETH/USD".to_string()];
-        assert_eq!(U128(3000), fpo_contract.aggregate_avg(pairs, vec![alice(), bob()], U64(0)));
-
-
+        assert_eq!(
+            U128(3000),
+            fpo_contract.aggregate_avg(pairs, vec![alice(), bob()], U64(0))
+        );
     }
 
     #[test]
@@ -325,17 +374,31 @@ mod tests {
         // instantiate a contract variable
         let mut fpo_contract = FPOContract::new();
         fpo_contract.create_pair(pair.clone(), 8, U128(2000));
-        assert_eq!(U128(2000), fpo_contract.get_entry(pair.clone(), env::predecessor_account_id()).price);
+        assert_eq!(
+            U128(2000),
+            fpo_contract
+                .get_entry(pair.clone(), env::predecessor_account_id())
+                .price
+        );
 
         // switch to bob as signer
         context = get_context(vec![], false, bob(), bob());
         testing_env!(context);
-       
+
         fpo_contract.create_pair(pair.clone(), 8, U128(4000));
-        assert_eq!(U128(4000), fpo_contract.get_entry(pair.clone(), bob()).price);
-        assert_eq!(U128(2000), fpo_contract.get_entry(pair.clone(), alice()).price);
+        assert_eq!(
+            U128(4000),
+            fpo_contract.get_entry(pair.clone(), bob()).price
+        );
+        assert_eq!(
+            U128(2000),
+            fpo_contract.get_entry(pair.clone(), alice()).price
+        );
 
         let pairs = vec![pair.clone(), pair];
-        assert_eq!(U128(3000), fpo_contract.aggregate_median(pairs, vec![alice(), bob()], U64(0)));
+        assert_eq!(
+            U128(3000),
+            fpo_contract.aggregate_median(pairs, vec![alice(), bob()], U64(0))
+        );
     }
 }
