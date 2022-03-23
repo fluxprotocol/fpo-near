@@ -1,8 +1,6 @@
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::LookupMap;
-use near_sdk::json_types::{WrappedTimestamp, U128, U64};
+use crate::*;
+use near_sdk::json_types::U64;
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::BorshStorageKey;
 
 #[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Debug)]
 pub struct PriceEntry {
@@ -22,6 +20,7 @@ pub enum ProviderStorageKeys {
     Pairs,
 }
 
+/// Provider methods (internal)
 impl Provider {
     pub fn new() -> Self {
         Self {
@@ -37,6 +36,11 @@ impl Provider {
             .expect(format!("no price available for {}", pair).as_str())
     }
 
+    /// Returns all data associated with a price pair, returning None if no price is available
+    pub fn get_entry_option(&self, pair: &String) -> Option<PriceEntry> {
+        self.pairs.get(pair)
+    }
+
     /// Sets the fee for querying prices (not yet implemented)
     pub fn set_fee(&mut self, fee: u128) {
         self.query_fee = fee
@@ -49,5 +53,15 @@ impl Provider {
         entry.price = price;
 
         self.pairs.insert(&pair, &entry);
+    }
+}
+
+/// Private contract methods
+impl FPOContract {
+    /// Returns all the data associated with a provider
+    pub fn get_provider_expect(&self, account_id: &AccountId) -> Provider {
+        self.providers
+            .get(account_id)
+            .expect("no provider with this account id")
     }
 }
