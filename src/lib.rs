@@ -39,10 +39,10 @@ impl FPOContract {
     /// Creates a new price pair by a provider
     #[payable]
     pub fn create_pair(&mut self, pair: String, decimals: u16, initial_price: U128) {
-        assert!(
-            self.providers.get(&env::predecessor_account_id()).is_none(),
-            "provider already exists"
-        );
+        // assert!(
+        //     self.providers.get(&env::predecessor_account_id()).is_none(),
+        //     "provider already exists"
+        // );
 
         let mut provider = self
             .providers
@@ -260,6 +260,48 @@ mod tests {
             true,
             fpo_contract.pair_exists("ETH/USD".to_string(), env::predecessor_account_id())
         );
+    }
+
+    #[test]
+    fn create_diff_pairs() {
+        // set up the mock context into the testing environment
+        let context = get_context(vec![], false, alice(), alice());
+        testing_env!(context);
+        // instantiate a contract variable
+        let mut fpo_contract = FPOContract::new();
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
+        assert_eq!(
+            true,
+            fpo_contract.pair_exists("ETH/USD".to_string(), env::predecessor_account_id())
+        );
+
+        fpo_contract.create_pair("BTC/USD".to_string(), 8, U128(42000));
+        assert_eq!(
+            true,
+            fpo_contract.pair_exists("BTC/USD".to_string(), env::predecessor_account_id())
+        );
+
+
+    }
+
+    #[test]
+    #[should_panic]
+    fn create_same_pair() {
+        // set up the mock context into the testing environment
+        let context = get_context(vec![], false, alice(), alice());
+        testing_env!(context);
+        // instantiate a contract variable
+        let mut fpo_contract = FPOContract::new();
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
+        assert_eq!(
+            true,
+            fpo_contract.pair_exists("ETH/USD".to_string(), env::predecessor_account_id())
+        );
+        
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
+
+
+
     }
 
     #[test]
