@@ -1,13 +1,6 @@
 use crate::*;
 use near_sdk::json_types::U64;
-use near_sdk::serde::{Deserialize, Serialize};
-
-#[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Debug)]
-pub struct PriceEntry {
-    pub price: U128,                   // Last reported price
-    pub decimals: u16,                 // Amount of decimals (e.g. if 2, 100 = 1.00)
-    pub last_update: WrappedTimestamp, // Time of report
-}
+use price_pair::PriceEntry;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Provider {

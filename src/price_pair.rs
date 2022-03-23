@@ -1,4 +1,12 @@
 use crate::*;
+use near_sdk::serde::{Deserialize, Serialize};
+
+#[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Debug)]
+pub struct PriceEntry {
+    pub price: U128,                   // Last reported price
+    pub decimals: u16,                 // Amount of decimals (e.g. if 2, 100 = 1.00)
+    pub last_update: WrappedTimestamp, // Time of report
+}
 
 /// Public contract methods
 #[near_bindgen]
@@ -46,20 +54,32 @@ impl FPOContract {
             .get_entry_option(&pair_name)
     }
 
+    /// Returns only the price of a price pair by a provider
+    pub fn get_price(&self, pair: String, provider: AccountId) -> Option<U128> {
+        let pair_name = format!("{}-{}", pair, provider);
+        self.get_provider_expect(&provider)
+            .get_entry_option(&pair_name)
+            .map(|entry| entry.price)
+    }
+
     /// Returns all the data associated with multiple price pairs by associated providers
-    pub fn get_entries(&self, pairs: Vec<String>, providers: Vec<AccountId>) -> Vec<PriceEntry> {
+    pub fn get_prices(&self, pairs: Vec<String>, providers: Vec<AccountId>) -> Vec<Option<U128>> {
         assert_eq!(
             pairs.len(),
             providers.len(),
             "pairs and provider should be of equal length"
         );
 
-        let mut entries = vec![];
+        let mut result = vec![];
         for (i, provider) in providers.iter().enumerate() {
             let pair_name = format!("{}-{}", pairs[i], provider);
-            entries.push(self.get_provider_expect(provider).get_entry_expect(&pair_name));
+            result.push(
+                self.get_provider_expect(provider)
+                    .get_entry_option(&pair_name)
+                    .map(|entry| entry.price),
+            );
         }
-        entries
+        result
     }
 
     /// Checks if a given price pair exists
@@ -145,14 +165,14 @@ mod tests {
         assert_eq!(
             vec![U128(2500), U128(42000)],
             fpo_contract
-                .get_entries(
+                .get_prices(
                     vec!["ETH/USD".to_string(), "BTC/USD".to_string()],
                     vec![env::predecessor_account_id(), env::predecessor_account_id()]
                 )
                 .iter()
-                .map(|entry| entry.price)
+                .map(|entry| entry.unwrap())
                 .collect::<Vec<U128>>()
-        )
+        );
     }
 
     #[test]

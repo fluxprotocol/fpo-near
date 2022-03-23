@@ -1,9 +1,10 @@
 mod aggregate;
+mod callbacks;
 mod math;
 mod price_pair;
 mod provider;
 mod storage_manager;
-use crate::provider::{PriceEntry, Provider};
+use crate::provider::Provider;
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;

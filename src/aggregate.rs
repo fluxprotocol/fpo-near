@@ -9,7 +9,7 @@ impl FPOContract {
         pairs: Vec<String>,
         providers: Vec<AccountId>,
         min_last_update: WrappedTimestamp,
-    ) -> U128 {
+    ) -> Option<U128> {
         assert_eq!(
             pairs.len(),
             providers.len(),
@@ -33,7 +33,11 @@ impl FPOContract {
             }
         });
 
-        U128(cumulative / amount_of_providers as u128)
+        if (amount_of_providers as u128) == 0 {
+            None
+        } else {
+            Some(U128::from(cumulative / amount_of_providers as u128))
+        }
     }
 
     /// Returns the median of given price pairs from given providers
@@ -42,7 +46,7 @@ impl FPOContract {
         pairs: Vec<String>,
         providers: Vec<AccountId>,
         min_last_update: WrappedTimestamp,
-    ) -> U128 {
+    ) -> Option<U128> {
         assert_eq!(
             pairs.len(),
             providers.len(),
@@ -70,7 +74,12 @@ impl FPOContract {
                         return arr;
                     }
                 });
-        math::median(&mut cumulative)
+
+        if cumulative.len() == 0 {
+            return None;
+        }
+
+        Some(math::median(&mut cumulative))
     }
 
     /// Returns multiple prices given by specified pairs and providers
@@ -186,7 +195,7 @@ mod tests {
 
         let pairs = vec!["ETH/USD".to_string(), "ETH/USD".to_string()];
         assert_eq!(
-            U128(3000),
+            Some(U128(3000)),
             fpo_contract.aggregate_avg(pairs, vec![alice(), bob()], U64(0))
         );
     }
@@ -223,7 +232,7 @@ mod tests {
 
         let pairs = vec![pair.clone(), pair];
         assert_eq!(
-            U128(3000),
+            Some(U128(3000)),
             fpo_contract.aggregate_median(pairs, vec![alice(), bob()], U64(0))
         );
     }
