@@ -33,11 +33,11 @@ impl FPOContract {
             }
         });
 
-        if (amount_of_providers as u128) == 0 {
-            None
-        } else {
-            Some(U128::from(cumulative / amount_of_providers as u128))
+        if amount_of_providers as u128 == 0 {
+            return None;
         }
+
+        Some(U128::from(cumulative / amount_of_providers as u128))
     }
 
     /// Returns the median of given price pairs from given providers

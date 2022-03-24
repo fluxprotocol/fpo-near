@@ -62,7 +62,9 @@ impl FPOContract {
         let pair_name = format!("{}-{}", pair, provider);
         let provider = self.get_provider_option(&provider);
         match provider {
-            Some(provider) => provider.get_entry_option(&pair_name).map(|entry| entry.price),
+            Some(provider) => provider
+                .get_entry_option(&pair_name)
+                .map(|entry| entry.price),
             None => None,
         }
     }
