@@ -57,4 +57,9 @@ impl FPOContract {
             .get(account_id)
             .expect("no provider with this account id")
     }
+
+    /// Creates a new price pair by a provider wrapped in an Option
+    pub fn get_provider_option(&self, account_id: &AccountId) -> Option<Provider> {
+        self.providers.get(account_id)
+    }
 }
