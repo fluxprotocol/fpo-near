@@ -50,16 +50,21 @@ impl FPOContract {
     /// Returns all data associated with a price pair by a provider
     pub fn get_entry(&self, pair: String, provider: AccountId) -> Option<PriceEntry> {
         let pair_name = format!("{}-{}", pair, provider);
-        self.get_provider_expect(&provider)
-            .get_entry_option(&pair_name)
+        let provider = self.get_provider_option(&provider);
+        match provider {
+            Some(provider) => provider.get_entry_option(&pair_name),
+            None => None,
+        }
     }
 
     /// Returns only the price of a price pair by a provider
     pub fn get_price(&self, pair: String, provider: AccountId) -> Option<U128> {
         let pair_name = format!("{}-{}", pair, provider);
-        self.get_provider_expect(&provider)
-            .get_entry_option(&pair_name)
-            .map(|entry| entry.price)
+        let provider = self.get_provider_option(&provider);
+        match provider {
+            Some(provider) => provider.get_entry_option(&pair_name).map(|entry| entry.price),
+            None => None,
+        }
     }
 
     /// Returns all the data associated with multiple price pairs by associated providers
