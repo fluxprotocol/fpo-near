@@ -89,6 +89,7 @@ impl Requester {
         }
     }
 
+    /// @dev Called by FPO contract after a `_call()` call to forward a price to the requester.
     pub fn on_price_received(
         &mut self,
         sender_id: AccountId,
@@ -97,7 +98,6 @@ impl Requester {
         price_type: PriceType,
         results: Vec<Option<U128>>,
     ) {
-        log!("HELLO FROM REQUESTER on_price_received");
         for provider in providers.iter() {
             let provider_account_id = provider.clone();
             let mut provider = self.providers.get(&provider).unwrap_or(Provider::new());
@@ -133,6 +133,8 @@ impl Requester {
             self.providers.insert(&provider_account_id, &provider);
         }
     }
+
+    /// @dev Gets a cached price from this contract.
     pub fn get_pair(&self, provider: AccountId, pair: String) -> PriceEntry {
         let prov = self
             .providers
@@ -141,8 +143,8 @@ impl Requester {
         prov.pairs.get(&pair).expect("No pair found")
     }
 
+    /// @dev Fetches a price from the FPO with the answer forwarded to `get_price_callback()`.
     pub fn get_price(&self, pair: String, provider: AccountId) -> Promise {
-        log!("REQUESTER GET_PRICE");
         fpo::get_price(
             pair.clone(),
             provider.clone(),
@@ -159,10 +161,8 @@ impl Requester {
     #[private]
     pub fn get_price_callback(&self) -> Option<U128> {
         if env::promise_results_count() != 1 {
-            log!("Expected a result on the callback");
             return None;
         }
-        log!("get_price_callback+++++++");
 
         // Get response, return false if failed
         let price: Option<U128> = match env::promise_result(0) {
@@ -170,17 +170,15 @@ impl Requester {
                 near_sdk::serde_json::from_slice::<Option<U128>>(&value).unwrap()
             }
             _ => {
-                log!("Getting info from Pool Party failed");
                 return None;
             }
         };
 
-        log!("RETURNING PRICE{:?}", price);
         price
     }
 
+    /// @dev Fetches prices from the FPO with the answers forwarded to `get_price_callback()`.
     pub fn get_prices(&self, pairs: Vec<String>, providers: Vec<AccountId>) -> Promise {
-        log!("REQUESTER GET_PRICE");
         fpo::get_prices(
             pairs.clone(),
             providers.clone(),
@@ -197,33 +195,27 @@ impl Requester {
     #[private]
     pub fn get_prices_callback(&self) -> Vec<Option<U128>> {
         if env::promise_results_count() != 1 {
-            log!("Expected a result on the callback");
             return vec![None];
         }
-        log!("get_price_callback+++++++");
-
         // Get response, return false if failed
         let prices: Vec<Option<U128>> = match env::promise_result(0) {
             PromiseResult::Successful(value) => {
                 near_sdk::serde_json::from_slice::<Vec<Option<U128>>>(&value).unwrap()
             }
             _ => {
-                log!("Getting info from Pool Party failed");
                 return vec![None];
             }
         };
-
-        log!("RETURNING PRICE{:?}", prices);
         prices
     }
 
+    /// @dev Fetches an averaged price from the FPO with the answer forwarded to `get_price_callback()`.
     pub fn aggregate_avg(
         &self,
         pairs: Vec<String>,
         providers: Vec<AccountId>,
         min_last_update: WrappedTimestamp,
     ) -> Promise {
-        log!("REQUESTER GET_PRICE");
         fpo::aggregate_avg(
             pairs.clone(),
             providers.clone(),
@@ -241,33 +233,27 @@ impl Requester {
     #[private]
     pub fn aggregate_avg_callback(&self) -> Option<U128> {
         if env::promise_results_count() != 1 {
-            log!("Expected a result on the callback");
             return None;
         }
-        log!("get_price_callback+++++++");
-
         // Get response, return false if failed
         let avg: Option<U128> = match env::promise_result(0) {
             PromiseResult::Successful(value) => {
                 near_sdk::serde_json::from_slice::<Option<U128>>(&value).unwrap()
             }
             _ => {
-                log!("Getting info from Pool Party failed");
                 return None;
             }
         };
-
-        log!("RETURNING PRICE{:?}", avg);
         avg
     }
 
+    /// @dev Fetches a median price from the FPO with the answer forwarded to `get_price_callback()`.
     pub fn aggregate_median(
         &self,
         pairs: Vec<String>,
         providers: Vec<AccountId>,
         min_last_update: WrappedTimestamp,
     ) -> Promise {
-        log!("REQUESTER GET_PRICE");
         fpo::aggregate_median(
             pairs.clone(),
             providers.clone(),
@@ -285,23 +271,17 @@ impl Requester {
     #[private]
     pub fn aggregate_median_callback(&self) -> Option<U128> {
         if env::promise_results_count() != 1 {
-            log!("Expected a result on the callback");
             return None;
         }
-        log!("get_price_callback+++++++");
-
         // Get response, return false if failed
         let avg: Option<U128> = match env::promise_result(0) {
             PromiseResult::Successful(value) => {
                 near_sdk::serde_json::from_slice::<Option<U128>>(&value).unwrap()
             }
             _ => {
-                log!("Getting info from Pool Party failed");
                 return None;
             }
         };
-
-        log!("RETURNING PRICE{:?}", avg);
         avg
     }
 }
