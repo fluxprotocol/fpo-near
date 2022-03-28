@@ -1,6 +1,6 @@
 
-# accountId=${accountId:-provider0.mennat0.testnet} 
-accountId=${accountId:-provider1.mennat0.testnet} 
+accountId=${accountId:-provider0.mennat0.testnet} 
+# accountId=${accountId:-provider1.mennat0.testnet} 
 
 masterAccountId=${masterAccountId:-mennat0.testnet}
 initialBalance=${initialBalance:-5}
@@ -8,8 +8,8 @@ fpoAccountId=${fpoAccountId:-fpo.mennat0.testnet}
 
 pair=${pair:-ETH / USD}
 decimals=${decimals:-8}
-# initial_price=${initial_price:-2000}
-initial_price=${initial_price:-4000}
+initial_price=${initial_price:-2000}
+# initial_price=${initial_price:-4000}
 
 
 

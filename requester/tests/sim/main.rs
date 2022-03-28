@@ -517,19 +517,19 @@ fn simulate_get_prices_call2() {
         None => println!("Retrieved Nothing"),
     }
 
-    // let fetched_entry = call!(
-    //     user,
-    //     requester.get_pair(provider2.account_id(), "ETH/USD".to_string())
-    // );
-    // // println!("res: {:?}", fetched_entry);
+    let fetched_entry = call!(
+        user,
+        requester.get_pair(provider2.account_id(), "ETH/USD".to_string())
+    );
+    // println!("res: {:?}", fetched_entry);
 
-    // match &fetched_entry.promise_results()[1] {
-    //     Some(res) => {
-    //         // println!("Retrieved Value: {:?}", res.unwrap_json_value());
-    //         assert_eq!(res.unwrap_json_value()["price"], "4000");
-    //     }
-    //     None => println!("Retrieved Nothing"),
-    // }
+    match &fetched_entry.promise_results()[1] {
+        Some(res) => {
+            // println!("Retrieved Value: {:?}", res.unwrap_json_value());
+            assert_eq!(res.unwrap_json_value()["price"], "4000");
+        }
+        None => println!("Retrieved Nothing"),
+    }
 }
 
 #[test]

@@ -90,50 +90,6 @@ impl Requester {
         }
     }
 
-    // pub fn on_price_received(
-    //     &mut self,
-    //     sender_id: AccountId,
-    //     pairs: Vec<String>,
-    //     providers: Vec<AccountId>,
-    //     price_type: PriceType,
-    //     results: Vec<Option<U128>>,
-    // ) {
-    //     log!("HELLO FROM REQUESTER on_price_received");
-    //     for provider in providers.iter() {
-    //         let provider_account_id = provider.clone();
-    //         let mut provider = self.providers.get(&provider).unwrap_or(Provider::new());
-    //         for (index, pair) in pairs.iter().enumerate() {
-    //             if price_type == PriceType::Mean || price_type == PriceType::Median {
-    //                 match results[0] {
-    //                     Some(result) => {
-    //                         let entry: PriceEntry = PriceEntry {
-    //                             price: result,
-    //                             sender: sender_id.clone(),
-    //                             price_type: price_type.clone(),
-    //                         };
-
-    //                         provider.set_pair(&pair, &entry.clone());
-    //                     }
-    //                     None => log!("Not found"),
-    //                 }
-    //             } else {
-    //                 match results[index] {
-    //                     Some(result) => {
-    //                         let entry: PriceEntry = PriceEntry {
-    //                             price: result,
-    //                             sender: sender_id.clone(),
-    //                             price_type: price_type.clone(),
-    //                         };
-
-    //                         provider.set_pair(&pair, &entry.clone());
-    //                     }
-    //                     None => log!("Not found"),
-    //                 }
-    //             }
-    //         }
-    //         self.providers.insert(&provider_account_id, &provider);
-    //     }
-    // }
     pub fn on_price_received(
         &mut self,
         sender_id: AccountId,
@@ -143,13 +99,11 @@ impl Requester {
         results: Vec<Option<U128>>,
     ) {
         log!("HELLO FROM REQUESTER on_price_received");
-        // log!("received results: {:?}", results);
-        // log!("received providers: {:?}", providers);
-
         for (index,provider) in providers.iter().enumerate() {
             let provider_account_id = provider.clone();
             let mut provider = self.providers.get(&provider).unwrap_or(Provider::new());
             log!("CURRENT PROVIDER: {:?}", provider_account_id);
+            let pair_name = format!("{}-{}", pairs[index], provider_account_id);
 
             if price_type == PriceType::Mean || price_type == PriceType::Median {
                 match results[0] {
@@ -160,7 +114,7 @@ impl Requester {
                             price_type: price_type.clone(),
                         };
                         log!("++MATCH RESULTS[0] PRICE = {:?}", result);
-                        provider.set_pair(&pairs[index], &entry.clone());
+                        provider.set_pair(&pair_name, &entry.clone());
                     }
                     None => log!("Not found"),
                 }
@@ -172,9 +126,7 @@ impl Requester {
                             sender: sender_id.clone(),
                             price_type: price_type.clone(),
                         };
-                        // log!("MATCH RESULTS[{}] ENTRY = {:?}", index, entry);
-
-                        provider.set_pair(&pairs[index], &entry.clone());
+                        provider.set_pair(&pair_name, &entry.clone());
                     }
                     None => log!("Not found"),
                 }
@@ -185,21 +137,20 @@ impl Requester {
             .providers
             .get(&provider_account_id)
             .expect("no provider with this account id");
-            log!("++++Hello from req get pair: {:?}", prov.pairs.get(&pairs[index]));
 
         }
     }
     pub fn get_pair(&self, provider: AccountId, pair: String) -> PriceEntry {
+        let pair_name = format!("{}-{}", pair, provider);
+
         let prov = self
             .providers
             .get(&provider)
             .expect("no provider with this account id");
-        log!("Hello from req get pair: {:?}", provider);
-        prov.pairs.get(&pair).expect("No pair found")
+        prov.pairs.get(&pair_name).expect("No pair found")
     }
 
     pub fn get_price(&self, pair: String, provider: AccountId) -> Promise {
-        log!("REQUESTER GET_PRICE");
         fpo::get_price(
             pair.clone(),
             provider.clone(),
@@ -219,7 +170,6 @@ impl Requester {
             log!("Expected a result on the callback");
             return None;
         }
-        log!("get_price_callback+++++++");
 
         // Get response, return false if failed
         let price: Option<U128> = match env::promise_result(0) {
@@ -231,13 +181,10 @@ impl Requester {
                 return None;
             }
         };
-
-        log!("RETURNING PRICE{:?}", price);
         price
     }
 
     pub fn get_prices(&self, pairs: Vec<String>, providers: Vec<AccountId>) -> Promise {
-        log!("REQUESTER GET_PRICE");
         fpo::get_prices(
             pairs.clone(),
             providers.clone(),
@@ -257,8 +204,6 @@ impl Requester {
             log!("Expected a result on the callback");
             return vec![None];
         }
-        log!("get_price_callback+++++++");
-
         // Get response, return false if failed
         let prices: Vec<Option<U128>> = match env::promise_result(0) {
             PromiseResult::Successful(value) => {
@@ -269,8 +214,6 @@ impl Requester {
                 return vec![None];
             }
         };
-
-        log!("RETURNING PRICE{:?}", prices);
         prices
     }
 
@@ -301,8 +244,6 @@ impl Requester {
             log!("Expected a result on the callback");
             return None;
         }
-        log!("get_price_callback+++++++");
-
         // Get response, return false if failed
         let avg: Option<U128> = match env::promise_result(0) {
             PromiseResult::Successful(value) => {
@@ -313,8 +254,6 @@ impl Requester {
                 return None;
             }
         };
-
-        log!("RETURNING PRICE{:?}", avg);
         avg
     }
 
@@ -324,7 +263,6 @@ impl Requester {
         providers: Vec<AccountId>,
         min_last_update: WrappedTimestamp,
     ) -> Promise {
-        log!("REQUESTER GET_PRICE");
         fpo::aggregate_median(
             pairs.clone(),
             providers.clone(),
@@ -345,7 +283,6 @@ impl Requester {
             log!("Expected a result on the callback");
             return None;
         }
-        log!("get_price_callback+++++++");
 
         // Get response, return false if failed
         let avg: Option<U128> = match env::promise_result(0) {
@@ -357,8 +294,6 @@ impl Requester {
                 return None;
             }
         };
-
-        log!("RETURNING PRICE{:?}", avg);
         avg
     }
 }
