@@ -1,16 +1,14 @@
-[package]
-name = "near-fpo"
-version = "0.2.1"
-authors = ["Flux Contributors <contributors@flux.xyz>"]
-edition = "2018"
+[workspace]
+members = [
+  "fpo",
+  "requester"
+]
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
-[dependencies]
-near-sdk = "3.1.0"
-flux-sdk = { git = "https://github.com/fluxprotocol/flux-sdk-rs.git", rev="58ccd8e43701079937956c193749881b4fcfd7b0" }
-serde = "1.0.118"
-
-[dev-dependencies]
-near-sdk-sim = "3.1.0"
+[profile.release]
+codegen-units = 1
+# Tell `rustc` to optimize for small code size.
+opt-level = "z"
+lto = true
+debug = false
+panic = "abort"
+overflow-checks = true
