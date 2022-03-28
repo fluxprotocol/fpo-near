@@ -1,0 +1,16 @@
+[package]
+name = "near-fpo"
+version = "0.2.1"
+authors = ["Flux Contributors <contributors@flux.xyz>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+near-sdk = "3.1.0"
+flux-sdk = { git = "https://github.com/fluxprotocol/flux-sdk-rs.git", rev="58ccd8e43701079937956c193749881b4fcfd7b0" }
+serde = "1.0.118"
+
+[dev-dependencies]
+near-sdk-sim = "3.1.0"

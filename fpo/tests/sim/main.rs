@@ -4,7 +4,7 @@ pub use near_sdk::json_types::{Base64VecU8, ValidAccountId, WrappedDuration, U64
 use near_sdk_sim::{call, deploy, init_simulator, to_yocto, ContractAccount, UserAccount};
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
-    FPO_BYTES => "target/wasm32-unknown-unknown/release/near_fpo.wasm",
+    FPO_BYTES => "../res/near_fpo.wasm",
 }
 
 pub const DEFAULT_GAS: u64 = 300_000_000_000_000;
