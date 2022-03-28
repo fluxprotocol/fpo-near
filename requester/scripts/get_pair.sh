@@ -1,7 +1,7 @@
 #!/bin/bash
 pair=${pair:-ETH / USD}
-# provider=${provider:-provider1.mennat0.testnet}
-provider=${provider:-provider0.mennat0.testnet}
+provider=${provider:-provider1.mennat0.testnet}
+# provider=${provider:-provider0.mennat0.testnet}
 
 amount=${amount:-0}
 accountId=${accountId:-req0.mennat0.testnet}
