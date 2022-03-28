@@ -149,7 +149,7 @@ impl Requester {
         for (index,provider) in providers.iter().enumerate() {
             let provider_account_id = provider.clone();
             let mut provider = self.providers.get(&provider).unwrap_or(Provider::new());
-            // log!("CURRENT PROVIDER: {:?}", provider_account_id);
+            log!("CURRENT PROVIDER: {:?}", provider_account_id);
 
             if price_type == PriceType::Mean || price_type == PriceType::Median {
                 match results[0] {
