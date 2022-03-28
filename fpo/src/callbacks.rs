@@ -1,6 +1,6 @@
 use crate::*;
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{ext_contract, Balance, Gas, Promise};
+use near_sdk::{ext_contract, Balance, Gas, Promise, log};
 
 const GAS_TO_SEND_PRICE: Gas = 5_000_000_000_000; // Todo: calculate and optimize
 const ZERO_BALANCE: Balance = 0;
@@ -60,6 +60,7 @@ impl FPOContract {
     ) -> Promise {
         let sender_id = env::predecessor_account_id();
         let entries = self.get_prices(pairs.clone(), providers.clone());
+        log!("entries: {:?}", entries);
         let num_pairs = pairs.len();
         ext_price_consumer::on_price_received(
             sender_id,
