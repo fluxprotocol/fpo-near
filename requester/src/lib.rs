@@ -38,7 +38,7 @@ trait RequestResolver {
     fn aggregate_median_callback(&self) -> Option<U128>;
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
 pub struct PriceEntry {
     price: U128,
     sender: AccountId,
@@ -46,6 +46,7 @@ pub struct PriceEntry {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
+
 pub struct Provider {
     pub pairs: LookupMap<String, PriceEntry>, // Maps "{TICKER_1}/{TICKER_2}" => PriceEntry - e.g.: ETH/USD => PriceEntry
 }
@@ -89,6 +90,50 @@ impl Requester {
         }
     }
 
+    // pub fn on_price_received(
+    //     &mut self,
+    //     sender_id: AccountId,
+    //     pairs: Vec<String>,
+    //     providers: Vec<AccountId>,
+    //     price_type: PriceType,
+    //     results: Vec<Option<U128>>,
+    // ) {
+    //     log!("HELLO FROM REQUESTER on_price_received");
+    //     for provider in providers.iter() {
+    //         let provider_account_id = provider.clone();
+    //         let mut provider = self.providers.get(&provider).unwrap_or(Provider::new());
+    //         for (index, pair) in pairs.iter().enumerate() {
+    //             if price_type == PriceType::Mean || price_type == PriceType::Median {
+    //                 match results[0] {
+    //                     Some(result) => {
+    //                         let entry: PriceEntry = PriceEntry {
+    //                             price: result,
+    //                             sender: sender_id.clone(),
+    //                             price_type: price_type.clone(),
+    //                         };
+
+    //                         provider.set_pair(&pair, &entry.clone());
+    //                     }
+    //                     None => log!("Not found"),
+    //                 }
+    //             } else {
+    //                 match results[index] {
+    //                     Some(result) => {
+    //                         let entry: PriceEntry = PriceEntry {
+    //                             price: result,
+    //                             sender: sender_id.clone(),
+    //                             price_type: price_type.clone(),
+    //                         };
+
+    //                         provider.set_pair(&pair, &entry.clone());
+    //                     }
+    //                     None => log!("Not found"),
+    //                 }
+    //             }
+    //         }
+    //         self.providers.insert(&provider_account_id, &provider);
+    //     }
+    // }
     pub fn on_price_received(
         &mut self,
         sender_id: AccountId,
@@ -98,39 +143,50 @@ impl Requester {
         results: Vec<Option<U128>>,
     ) {
         log!("HELLO FROM REQUESTER on_price_received");
-        for provider in providers.iter() {
+        // log!("received results: {:?}", results);
+        // log!("received providers: {:?}", providers);
+
+        for (index,provider) in providers.iter().enumerate() {
             let provider_account_id = provider.clone();
             let mut provider = self.providers.get(&provider).unwrap_or(Provider::new());
-            for (index, pair) in pairs.iter().enumerate() {
-                if price_type == PriceType::Mean || price_type == PriceType::Median {
-                    match results[0] {
-                        Some(result) => {
-                            let entry: PriceEntry = PriceEntry {
-                                price: result,
-                                sender: sender_id.clone(),
-                                price_type: price_type.clone(),
-                            };
+            // log!("CURRENT PROVIDER: {:?}", provider_account_id);
 
-                            provider.set_pair(&pair, &entry.clone());
-                        }
-                        None => log!("Not found"),
+            if price_type == PriceType::Mean || price_type == PriceType::Median {
+                match results[0] {
+                    Some(result) => {
+                        let entry: PriceEntry = PriceEntry {
+                            price: result,
+                            sender: sender_id.clone(),
+                            price_type: price_type.clone(),
+                        };
+                        log!("++MATCH RESULTS[0] PRICE = {:?}", result);
+                        provider.set_pair(&pairs[index], &entry.clone());
                     }
-                } else {
-                    match results[index] {
-                        Some(result) => {
-                            let entry: PriceEntry = PriceEntry {
-                                price: result,
-                                sender: sender_id.clone(),
-                                price_type: price_type.clone(),
-                            };
+                    None => log!("Not found"),
+                }
+            } else {
+                match results[index] {
+                    Some(result) => {
+                        let entry: PriceEntry = PriceEntry {
+                            price: result,
+                            sender: sender_id.clone(),
+                            price_type: price_type.clone(),
+                        };
+                        // log!("MATCH RESULTS[{}] ENTRY = {:?}", index, entry);
 
-                            provider.set_pair(&pair, &entry.clone());
-                        }
-                        None => log!("Not found"),
+                        provider.set_pair(&pairs[index], &entry.clone());
                     }
+                    None => log!("Not found"),
                 }
             }
+        
             self.providers.insert(&provider_account_id, &provider);
+            let prov = self
+            .providers
+            .get(&provider_account_id)
+            .expect("no provider with this account id");
+            log!("++++Hello from req get pair: {:?}", prov.pairs.get(&pairs[index]));
+
         }
     }
     pub fn get_pair(&self, provider: AccountId, pair: String) -> PriceEntry {
@@ -138,6 +194,7 @@ impl Requester {
             .providers
             .get(&provider)
             .expect("no provider with this account id");
+        log!("Hello from req get pair: {:?}", provider);
         prov.pairs.get(&pair).expect("No pair found")
     }
 
