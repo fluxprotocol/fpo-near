@@ -8,18 +8,14 @@ edition = "2018"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-# near-sdk = "3.1.0"
 near-sdk = "4.0.0-pre.7"
-
-flux-sdk = { git = "https://github.com/fluxprotocol/flux-sdk-rs.git", rev="58ccd8e43701079937956c193749881b4fcfd7b0" }
+flux-sdk = { git = "https://github.com/fluxprotocol/flux-sdk-rs"}
 serde = "1.0.118"
 # near-contract-standards = "4.0.0-pre.7"
 near-fpo = { path = "../fpo"}
 
 [dev-dependencies]
 near-sdk-sim = "4.0.0-pre.7"
-
-
 serde_json = "1.0"
 tokio = { version = "1.14", features = ["full"] }
 anyhow = "1.0"

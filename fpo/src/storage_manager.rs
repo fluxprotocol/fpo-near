@@ -156,119 +156,108 @@ impl FPOContract {
     }
 }
 
-// #[cfg(not(target_arch = "wasm32"))]
-// #[cfg(test)]
-// mod mock_token_basic_tests {
-//     use super::*;
-//     use near_sdk::{testing_env, MockedBlockchain, VMContext};
-//     use std::convert::TryInto;
+#[cfg(not(target_arch = "wasm32"))]
+#[cfg(test)]
+mod mock_token_basic_tests {
+    
+    use std::convert::TryInto;
 
-//     fn alice() -> AccountId {
-//         "alice.near".to_string()
-//     }
+    use near_sdk::test_utils::VMContextBuilder;
+    use near_sdk::{testing_env, ONE_YOCTO};
 
-//     fn to_valid(account: AccountId) -> AccountId {
-//         account.try_into().expect("invalid account")
-//     }
+    use super::*;
 
-//     fn get_context(predecessor_account_id: AccountId) -> VMContext {
-//         VMContext {
-//             current_account_id: alice(),
-//             signer_account_id: alice(),
-//             signer_account_pk: vec![0, 1, 2],
-//             predecessor_account_id,
-//             input: vec![],
-//             block_index: 0,
-//             block_timestamp: 0,
-//             account_balance: 1000 * 10u128.pow(24),
-//             account_locked_balance: 0,
-//             storage_usage: 10u64.pow(6),
-//             attached_deposit: 1000 * 10u128.pow(24),
-//             prepaid_gas: 10u64.pow(18),
-//             random_seed: vec![0, 1, 2],
-//             is_view: false,
-//             output_data_receivers: vec![],
-//             epoch_height: 0,
-//         }
-//     }
 
-//     #[test]
-//     fn storage_manager_deposit() {
-//         testing_env!(get_context(alice()));
-//         let mut contract = FPOContract::new();
+    fn alice() -> AccountId {
+        "alice.near".parse().unwrap()
+    }
+  
+    fn to_valid(account: AccountId) -> AccountId {
+        account.try_into().expect("invalid account")
+    }
+        
 
-//         let account = contract.get_storage_account(&alice());
-//         assert_eq!(account.available, 0);
 
-//         let amount = 10u128.pow(24);
+    fn get_context(predecessor_account_id: AccountId) -> VMContextBuilder {
+        let mut builder = VMContextBuilder::new();
+        builder
+            .current_account_id("alice.near".parse().unwrap())
+            .signer_account_id("alice.near".parse().unwrap())
+            .predecessor_account_id(predecessor_account_id.clone());
+        builder
+    }
 
-//         // deposit
-//         let mut c: VMContext = get_context(alice());
-//         c.attached_deposit = amount;
-//         testing_env!(c);
-//         contract.storage_deposit(Some(to_valid(alice())));
+    #[test]
+    fn storage_manager_deposit() {
+        testing_env!(get_context(alice()).build());
+        let mut contract = FPOContract::new();
 
-//         let account = contract.get_storage_account(&alice());
-//         assert_eq!(account.available, amount);
+        let account = contract.get_storage_account(&alice());
+        assert_eq!(account.available, 0);
 
-//         // deposit again
-//         let mut c: VMContext = get_context(alice());
-//         c.attached_deposit = amount;
-//         testing_env!(c);
-//         contract.storage_deposit(Some(to_valid(alice())));
+        let amount = 10u128.pow(24);
 
-//         let account = contract.get_storage_account(&alice());
-//         assert_eq!(account.available, amount * 2);
-//     }
+        // deposit
+        let mut c = get_context(alice());
+        testing_env!(c.attached_deposit(amount).build());
+        contract.storage_deposit(Some(to_valid(alice())));
 
-//     #[test]
-//     fn storage_manager_withdraw() {
-//         testing_env!(get_context(alice()));
-//         let mut contract = FPOContract::new();
+        let account = contract.get_storage_account(&alice());
+        assert_eq!(account.available, amount);
 
-//         let account = contract.get_storage_account(&alice());
-//         assert_eq!(account.available, 0);
+        // deposit again
+        let mut c = get_context(alice());
+        testing_env!(c.attached_deposit(amount).build());
+        contract.storage_deposit(Some(to_valid(alice())));
 
-//         let amount = 10u128.pow(24);
+        let account = contract.get_storage_account(&alice());
+        assert_eq!(account.available, amount * 2);
+    }
 
-//         // deposit
-//         let mut c: VMContext = get_context(alice());
-//         c.attached_deposit = amount;
-//         testing_env!(c);
-//         contract.storage_deposit(Some(to_valid(alice())));
+    #[test]
+    fn storage_manager_withdraw() {
+        testing_env!(get_context(alice()).build());
+        let mut contract = FPOContract::new();
 
-//         // withdraw
-//         let mut c: VMContext = get_context(alice());
-//         c.attached_deposit = 1;
-//         testing_env!(c);
+        let account = contract.get_storage_account(&alice());
+        assert_eq!(account.available, 0);
 
-//         contract.storage_withdraw(U128(amount / 2));
-//         let account = contract.get_storage_account(&alice());
-//         assert_eq!(account.available, amount / 2);
-//     }
+        let amount = 10u128.pow(24);
 
-//     #[test]
-//     #[should_panic(expected = "Not enough storage available")]
-//     fn storage_manager_withdraw_too_much() {
-//         testing_env!(get_context(alice()));
-//         let mut contract = FPOContract::new();
+        // deposit
+        let mut c = get_context(alice());
+        testing_env!(c.attached_deposit(amount).build());
+        contract.storage_deposit(Some(to_valid(alice())));
 
-//         let account = contract.get_storage_account(&alice());
-//         assert_eq!(account.available, 0);
+        // withdraw
+        let mut c = get_context(alice());
+        testing_env!(c.attached_deposit(1).build());
 
-//         let amount = 10u128.pow(24);
+        contract.storage_withdraw(U128(amount / 2));
+        let account = contract.get_storage_account(&alice());
+        assert_eq!(account.available, amount / 2);
+    }
 
-//         //deposit
-//         let mut c: VMContext = get_context(alice());
-//         c.attached_deposit = amount;
-//         testing_env!(c);
-//         contract.storage_deposit(Some(to_valid(alice())));
+    #[test]
+    #[should_panic(expected = "Not enough storage available")]
+    fn storage_manager_withdraw_too_much() {
+        testing_env!(get_context(alice()).build());
+        let mut contract = FPOContract::new();
 
-//         // withdraw
-//         let mut c: VMContext = get_context(alice());
-//         c.attached_deposit = 1;
-//         testing_env!(c);
+        let account = contract.get_storage_account(&alice());
+        assert_eq!(account.available, 0);
 
-//         contract.storage_withdraw(U128(amount * 2));
-//     }
-// }
+        let amount = 10u128.pow(24);
+
+        //deposit
+        let mut c = get_context(alice());
+        testing_env!(c.attached_deposit(amount).build());
+        contract.storage_deposit(Some(to_valid(alice())));
+
+        // withdraw
+        let mut c = get_context(alice());
+        testing_env!(c.attached_deposit(1).build());
+
+        contract.storage_withdraw(U128(amount * 2));
+    }
+}
