@@ -1,6 +1,7 @@
+
 use near_fpo::FPOContractContract;
-use near_sdk::json_types::U128;
-pub use near_sdk::json_types::{Base64VecU8, ValidAccountId, WrappedDuration, U64};
+use near_sdk::{json_types::U128, AccountId};
+pub use near_sdk::json_types::Base64VecU8;
 use near_sdk_sim::{call, deploy, init_simulator, to_yocto, ContractAccount, UserAccount};
 use requester::RequesterContract;
 use serde_json::json;
@@ -23,19 +24,19 @@ fn init() -> (
 ) {
     let root = init_simulator(None);
     // Deploy the compiled Wasm bytes
-    let fpo: ContractAccount<FPOContractContract> = deploy!(
+    let fpo: ContractAccount<FPOContractContract> = deploy! {
         contract: FPOContractContract,
         contract_id: "nearfpo".to_string(),
         bytes: &FPO_BYTES,
         signer_account: root
-    );
+    };
     // Deploy the compiled Wasm bytes
-    let requester: ContractAccount<RequesterContract> = deploy!(
+    let requester: ContractAccount<RequesterContract> = deploy!{
         contract: RequesterContract,
-        contract_id: "requester".to_string(),
+        contract_id: "requester",
         bytes: &REQUESTER_BYTES,
         signer_account: root
-    );
+    };
 
     (root, fpo, requester)
 }
@@ -44,8 +45,8 @@ fn init() -> (
 fn simulate_get_price() {
     let (root, fpo, requester) = init();
 
-    let provider1 = root.create_user("provider1".to_string(), to_yocto("1000000"));
-    let provider2 = root.create_user("provider2".to_string(), to_yocto("1000000"));
+    let provider1 = root.create_user( "provider1".parse().unwrap() , to_yocto("1000000"));
+    let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
     call!(provider1, fpo.new()).assert_success();
 
     // create a price pair, check if it exists, and get the value
