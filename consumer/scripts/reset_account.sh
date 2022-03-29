@@ -2,7 +2,7 @@
 
 # default params
 network=${network:-testnet}
-accountId=${accountId:-requester.YOUR_TESTNET_ACCOUNT_ID.testnet}
+accountId=${accountId:-consumer.YOUR_TESTNET_ACCOUNT_ID.testnet}
 master=${master:-YOUR_TESTNET_ACCOUNT_ID.testnet}
 initialBalance=${initialBalance:-5}
 

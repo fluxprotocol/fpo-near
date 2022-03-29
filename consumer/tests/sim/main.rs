@@ -2,12 +2,12 @@ use near_fpo::FPOContractContract;
 pub use near_sdk::json_types::Base64VecU8;
 use near_sdk::json_types::U128;
 use near_sdk_sim::{call, deploy, init_simulator, to_yocto, ContractAccount, UserAccount};
-use requester::RequesterContract;
+use consumer::ConsumerContract;
 use serde_json::json;
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
     FPO_BYTES => "../res/near_fpo.wasm",
-    REQUESTER_BYTES => "../res/requester.wasm"
+    CONSUMER_BYTES => "../res/consumer.wasm"
 }
 
 pub const DEFAULT_GAS: u64 = 300_000_000_000_000;
@@ -15,7 +15,7 @@ pub const DEFAULT_GAS: u64 = 300_000_000_000_000;
 fn init() -> (
     UserAccount,
     ContractAccount<FPOContractContract>,
-    ContractAccount<RequesterContract>,
+    ContractAccount<ConsumerContract>,
 ) {
     let root = init_simulator(None);
     // Deploy the compiled Wasm bytes
@@ -26,19 +26,19 @@ fn init() -> (
         signer_account: root
     };
     // Deploy the compiled Wasm bytes
-    let requester: ContractAccount<RequesterContract> = deploy! {
-        contract: RequesterContract,
-        contract_id: "requester",
-        bytes: &REQUESTER_BYTES,
+    let consumer: ContractAccount<ConsumerContract> = deploy! {
+        contract: ConsumerContract,
+        contract_id: "consumer",
+        bytes: &CONSUMER_BYTES,
         signer_account: root
     };
 
-    (root, fpo, requester)
+    (root, fpo, consumer)
 }
 
 #[test]
 fn simulate_get_price() {
-    let (root, fpo, requester) = init();
+    let (root, fpo, consumer) = init();
 
     let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
     let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
@@ -65,11 +65,11 @@ fn simulate_get_price() {
         &"2000".to_string()
     );
 
-    call!(provider2, requester.new(fpo.account_id())).assert_success();
+    call!(provider2, consumer.new(fpo.account_id())).assert_success();
 
     let outcome = call!(
         provider2,
-        requester.get_price("ETH/USD".to_string(), provider1.account_id())
+        consumer.get_price("ETH/USD".to_string(), provider1.account_id())
     );
     match &outcome.promise_results()[2] {
         Some(res) => {
@@ -81,13 +81,13 @@ fn simulate_get_price() {
 
 #[test]
 fn simulate_get_prices() {
-    let (root, fpo, requester) = init();
+    let (root, fpo, consumer) = init();
 
     let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
     let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
 
     call!(root, fpo.new()).assert_success();
-    call!(root, requester.new(fpo.account_id())).assert_success();
+    call!(root, consumer.new(fpo.account_id())).assert_success();
 
     // create a price pair, check if it exists, and get the value
     call!(
@@ -131,7 +131,7 @@ fn simulate_get_prices() {
 
     let outcome = call!(
         provider2,
-        requester.get_prices(
+        consumer.get_prices(
             vec!["ETH/USD".to_string(), "ETH/USD".to_string()],
             vec![provider1.account_id(), provider2.account_id()]
         )
@@ -146,13 +146,13 @@ fn simulate_get_prices() {
 
 #[test]
 fn simulate_agg_avg() {
-    let (root, fpo, requester) = init();
+    let (root, fpo, consumer) = init();
 
     let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
     let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
 
     call!(root, fpo.new()).assert_success();
-    call!(root, requester.new(fpo.account_id())).assert_success();
+    call!(root, consumer.new(fpo.account_id())).assert_success();
 
     // create a price pair, check if it exists, and get the value
     call!(
@@ -196,7 +196,7 @@ fn simulate_agg_avg() {
 
     let outcome = call!(
         provider2,
-        requester.aggregate_avg(
+        consumer.aggregate_avg(
             vec!["ETH/USD".to_string(), "ETH/USD".to_string()],
             vec![provider1.account_id(), provider2.account_id()],
             0
@@ -212,13 +212,13 @@ fn simulate_agg_avg() {
 
 #[test]
 fn simulate_agg_median() {
-    let (root, fpo, requester) = init();
+    let (root, fpo, consumer) = init();
 
     let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
     let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
 
     call!(root, fpo.new()).assert_success();
-    call!(root, requester.new(fpo.account_id())).assert_success();
+    call!(root, consumer.new(fpo.account_id())).assert_success();
 
     // create a price pair, check if it exists, and get the value
     call!(
@@ -262,7 +262,7 @@ fn simulate_agg_median() {
 
     let outcome = call!(
         provider2,
-        requester.aggregate_median(
+        consumer.aggregate_median(
             vec!["ETH/USD".to_string(), "ETH/USD".to_string()],
             vec![provider1.account_id(), provider2.account_id()],
             0
@@ -278,13 +278,13 @@ fn simulate_agg_median() {
 
 #[test]
 fn simulate_get_price_call() {
-    let (root, fpo, requester) = init();
+    let (root, fpo, consumer) = init();
 
     let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
     let user = root.create_user("user".parse().unwrap(), to_yocto("1000000"));
 
     call!(root, fpo.new()).assert_success();
-    call!(root, requester.new(fpo.account_id())).assert_success();
+    call!(root, consumer.new(fpo.account_id())).assert_success();
 
     // create a price pair, check if it exists, and get the value
     call!(
@@ -312,14 +312,13 @@ fn simulate_get_price_call() {
         fpo.get_price_call(
             "ETH/USD".to_string(),
             provider1.account_id(),
-            requester.account_id()
+            consumer.account_id()
         )
     );
 
-
     let fetched_entry = call!(
         user,
-        requester.get_pair(provider1.account_id(), "ETH/USD".to_string())
+        consumer.get_pair(provider1.account_id(), "ETH/USD".to_string())
     );
 
     match &fetched_entry.promise_results()[1] {
@@ -332,7 +331,7 @@ fn simulate_get_price_call() {
 
 #[test]
 fn simulate_get_prices_call() {
-    let (root, fpo, requester) = init();
+    let (root, fpo, consumer) = init();
 
     let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
     let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
@@ -340,7 +339,7 @@ fn simulate_get_prices_call() {
     let user = root.create_user("user".parse().unwrap(), to_yocto("1000000"));
 
     call!(root, fpo.new()).assert_success();
-    call!(root, requester.new(fpo.account_id())).assert_success();
+    call!(root, consumer.new(fpo.account_id())).assert_success();
 
     // create a price pair, check if it exists, and get the value
     call!(
@@ -389,13 +388,13 @@ fn simulate_get_prices_call() {
         fpo.get_prices_call(
             vec!["ETH/USD".to_string(), "BTC/USD".to_string()],
             vec![provider1.account_id(), provider2.account_id()],
-            requester.account_id()
+            consumer.account_id()
         )
     );
 
     let fetched_entry = call!(
         user,
-        requester.get_pair(provider1.account_id(), "ETH/USD".to_string())
+        consumer.get_pair(provider1.account_id(), "ETH/USD".to_string())
     );
 
     match &fetched_entry.promise_results()[1] {
@@ -408,7 +407,7 @@ fn simulate_get_prices_call() {
 
     let fetched_entry = call!(
         user,
-        requester.get_pair(provider2.account_id(), "BTC/USD".to_string())
+        consumer.get_pair(provider2.account_id(), "BTC/USD".to_string())
     );
 
     match &fetched_entry.promise_results()[1] {
@@ -421,7 +420,7 @@ fn simulate_get_prices_call() {
 
 #[test]
 fn simulate_get_prices_call2() {
-    let (root, fpo, requester) = init();
+    let (root, fpo, consumer) = init();
 
     let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
     let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
@@ -429,7 +428,7 @@ fn simulate_get_prices_call2() {
     let user = root.create_user("user".parse().unwrap(), to_yocto("1000000"));
 
     call!(root, fpo.new()).assert_success();
-    call!(root, requester.new(fpo.account_id())).assert_success();
+    call!(root, consumer.new(fpo.account_id())).assert_success();
 
     // create a price pair, check if it exists, and get the value
     call!(
@@ -478,14 +477,13 @@ fn simulate_get_prices_call2() {
         fpo.get_prices_call(
             vec!["ETH/USD".to_string(), "ETH/USD".to_string()],
             vec![provider1.account_id(), provider2.account_id()],
-            requester.account_id()
+            consumer.account_id()
         )
     );
 
-
     let fetched_entry = call!(
         user,
-        requester.get_pair(provider1.account_id(), "ETH/USD".to_string())
+        consumer.get_pair(provider1.account_id(), "ETH/USD".to_string())
     );
 
     match &fetched_entry.promise_results()[1] {
@@ -497,7 +495,7 @@ fn simulate_get_prices_call2() {
 
     let fetched_entry = call!(
         user,
-        requester.get_pair(provider2.account_id(), "ETH/USD".to_string())
+        consumer.get_pair(provider2.account_id(), "ETH/USD".to_string())
     );
 
     match &fetched_entry.promise_results()[1] {
@@ -510,7 +508,7 @@ fn simulate_get_prices_call2() {
 
 #[test]
 fn simulate_aggregate_avg_call() {
-    let (root, fpo, requester) = init();
+    let (root, fpo, consumer) = init();
 
     let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
     let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
@@ -518,7 +516,7 @@ fn simulate_aggregate_avg_call() {
     let user = root.create_user("user".parse().unwrap(), to_yocto("1000000"));
 
     call!(root, fpo.new()).assert_success();
-    call!(root, requester.new(fpo.account_id())).assert_success();
+    call!(root, consumer.new(fpo.account_id())).assert_success();
 
     // create a price pair, check if it exists, and get the value
     call!(
@@ -568,13 +566,13 @@ fn simulate_aggregate_avg_call() {
             vec!["ETH/USD".to_string(), "ETH / USD".to_string()],
             vec![provider1.account_id(), provider2.account_id()],
             0,
-            requester.account_id()
+            consumer.account_id()
         )
     );
 
     let fetched_entry = call!(
         user,
-        requester.get_pair(provider1.account_id(), "ETH/USD".to_string())
+        consumer.get_pair(provider1.account_id(), "ETH/USD".to_string())
     );
 
     match &fetched_entry.promise_results()[1] {
@@ -586,7 +584,7 @@ fn simulate_aggregate_avg_call() {
 
     let fetched_entry = call!(
         user,
-        requester.get_pair(provider2.account_id(), "ETH / USD".to_string())
+        consumer.get_pair(provider2.account_id(), "ETH / USD".to_string())
     );
 
     match &fetched_entry.promise_results()[1] {
@@ -599,7 +597,7 @@ fn simulate_aggregate_avg_call() {
 
 #[test]
 fn simulate_aggregate_median_call() {
-    let (root, fpo, requester) = init();
+    let (root, fpo, consumer) = init();
 
     let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
     let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
@@ -607,7 +605,7 @@ fn simulate_aggregate_median_call() {
     let user = root.create_user("user".parse().unwrap(), to_yocto("1000000"));
 
     call!(root, fpo.new()).assert_success();
-    call!(root, requester.new(fpo.account_id())).assert_success();
+    call!(root, consumer.new(fpo.account_id())).assert_success();
 
     // create a price pair, check if it exists, and get the value
     call!(
@@ -657,13 +655,13 @@ fn simulate_aggregate_median_call() {
             vec!["ETH/USD".to_string(), "ETH / USD".to_string()],
             vec![provider1.account_id(), provider2.account_id()],
             0,
-            requester.account_id()
+            consumer.account_id()
         )
     );
 
     let fetched_entry = call!(
         user,
-        requester.get_pair(provider1.account_id(), "ETH/USD".to_string())
+        consumer.get_pair(provider1.account_id(), "ETH/USD".to_string())
     );
 
     match &fetched_entry.promise_results()[1] {
@@ -675,7 +673,7 @@ fn simulate_aggregate_median_call() {
 
     let fetched_entry = call!(
         user,
-        requester.get_pair(provider2.account_id(), "ETH / USD".to_string())
+        consumer.get_pair(provider2.account_id(), "ETH / USD".to_string())
     );
 
     match &fetched_entry.promise_results()[1] {
