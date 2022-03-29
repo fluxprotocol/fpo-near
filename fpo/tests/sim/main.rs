@@ -1,6 +1,6 @@
 use near_fpo::FPOContractContract;
 use near_sdk::json_types::U128;
-pub use near_sdk::json_types::{Base64VecU8, ValidAccountId, WrappedDuration, U64};
+pub use near_sdk::json_types::{Base64VecU8};
 use near_sdk_sim::{call, deploy, init_simulator, to_yocto, ContractAccount, UserAccount};
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
@@ -119,7 +119,7 @@ fn simulate_different_providers() {
     .assert_success();
 
     // create a price pair from bob
-    let bob = root.create_user("bob".to_string(), to_yocto("1000000"));
+    let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
     call!(bob, fpo.create_pair("ETH/USD".to_string(), 8, U128(4000))).assert_success();
     call!(
         bob,
@@ -159,7 +159,7 @@ fn simulate_different_pairs() {
     call!(root, fpo.new()).assert_success();
 
     // create a price pair from bob
-    let bob = root.create_user("bob".to_string(), to_yocto("1000000"));
+    let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
     call!(bob, fpo.create_pair("ETH / USD".to_string(), 8, U128(4000))).assert_success();
     call!(
         bob,
@@ -217,15 +217,15 @@ fn simulate_agg_avg() {
     call!(root, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))).assert_success();
 
     // create a price pair from bob
-    let bob = root.create_user("bob".to_string(), to_yocto("1000000"));
+    let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
     call!(bob, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))).assert_success();
 
     // create a price pair from alice
-    let alice = root.create_user("alice".to_string(), to_yocto("1000000"));
+    let alice = root.create_user("alice".parse().unwrap(), to_yocto("1000000"));
     call!(alice, fpo.create_pair("ETH/USD".to_string(), 8, U128(3000))).assert_success();
 
     // create a price pair from carol
-    let carol = root.create_user("carol".to_string(), to_yocto("1000000"));
+    let carol = root.create_user("carol".parse().unwrap(), to_yocto("1000000"));
     call!(carol, fpo.create_pair("ETH/USD".to_string(), 8, U128(3000))).assert_success();
 
     // find the average of the four
@@ -245,7 +245,7 @@ fn simulate_agg_avg() {
                 alice.account_id(),
                 carol.account_id()
             ],
-            U64(0)
+            0
         )
     );
 
@@ -263,15 +263,15 @@ fn simulate_agg_median() {
     call!(root, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))).assert_success();
 
     // create a price pair from bob
-    let bob = root.create_user("bob".to_string(), to_yocto("1000000"));
+    let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
     call!(bob, fpo.create_pair("ETH/USD".to_string(), 8, U128(4000))).assert_success();
 
     // create a price pair from alice
-    let alice = root.create_user("alice".to_string(), to_yocto("1000000"));
+    let alice = root.create_user("alice".parse().unwrap(), to_yocto("1000000"));
     call!(alice, fpo.create_pair("ETH/USD".to_string(), 8, U128(4000))).assert_success();
 
     // create a price pair from carol
-    let carol = root.create_user("carol".to_string(), to_yocto("1000000"));
+    let carol = root.create_user("carol".parse().unwrap(), to_yocto("1000000"));
     call!(carol, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))).assert_success();
 
     // find the median of the four
@@ -291,7 +291,7 @@ fn simulate_agg_median() {
                 alice.account_id(),
                 carol.account_id()
             ],
-            U64(0)
+            0
         )
     );
 
@@ -309,15 +309,15 @@ fn simulate_agg_median_diff_ids() {
     call!(root, fpo.create_pair("ETH-USD".to_string(), 8, U128(2000))).assert_success();
 
     // create a price pair from bob
-    let bob = root.create_user("bob".to_string(), to_yocto("1000000"));
+    let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
     call!(bob, fpo.create_pair("ETH / USD".to_string(), 8, U128(4000))).assert_success();
 
     // create a price pair from alice
-    let alice = root.create_user("alice".to_string(), to_yocto("1000000"));
+    let alice = root.create_user("alice".parse().unwrap(), to_yocto("1000000"));
     call!(alice, fpo.create_pair("ETH/USD".to_string(), 8, U128(4000))).assert_success();
 
     // create a price pair from carol
-    let carol = root.create_user("carol".to_string(), to_yocto("1000000"));
+    let carol = root.create_user("carol".parse().unwrap(), to_yocto("1000000"));
     call!(carol, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))).assert_success();
 
     // find the median of the four
@@ -337,7 +337,7 @@ fn simulate_agg_median_diff_ids() {
                 alice.account_id(),
                 carol.account_id()
             ],
-            U64(0)
+            0
         )
     );
 
