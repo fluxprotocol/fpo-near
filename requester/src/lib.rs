@@ -1,14 +1,10 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;
-use near_sdk::json_types::{ U128};
+use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{Balance, PromiseError};
+use near_sdk::Balance;
 use near_sdk::Timestamp;
-use near_sdk::{
-    env, ext_contract, log, near_bindgen, AccountId, Gas, PanicOnDefault, Promise, PromiseResult,
-};
-
-// near_sdk::setup_alloc!();
+use near_sdk::{env, ext_contract, log, near_bindgen, AccountId, Gas, PanicOnDefault, Promise};
 
 const NO_DEPOSIT: Balance = 0;
 const GAS_FOR_RESOLVE_TRANSFER: Gas = Gas(5_000_000_000_000);
@@ -33,10 +29,8 @@ trait FPO {
 
 #[ext_contract(ext_self)]
 trait RequestResolver {
-    fn get_price_callback(&self) -> Option<U128>;
-    fn get_prices_callback(&self) -> Vec<Option<U128>>;
-    fn aggregate_avg_callback(&self) -> Option<U128>;
-    fn aggregate_median_callback(&self) -> Option<U128>;
+    fn price_callback(&self) -> Option<U128>;
+    fn prices_callback(&self) -> Vec<Option<U128>>;
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
@@ -99,11 +93,9 @@ impl Requester {
         price_type: PriceType,
         results: Vec<Option<U128>>,
     ) {
-        log!("HELLO FROM REQUESTER on_price_received");
-        for (index,provider) in providers.iter().enumerate() {
+        for (index, provider) in providers.iter().enumerate() {
             let provider_account_id = provider.clone();
             let mut provider = self.providers.get(&provider).unwrap_or(Provider::new());
-            log!("CURRENT PROVIDER: {:?}", provider_account_id);
             let pair_name = format!("{}-{}", pairs[index], provider_account_id);
 
             if price_type == PriceType::Mean || price_type == PriceType::Median {
@@ -114,7 +106,6 @@ impl Requester {
                             sender: sender_id.clone(),
                             price_type: price_type.clone(),
                         };
-                        log!("++MATCH RESULTS[0] PRICE = {:?}", result);
                         provider.set_pair(&pair_name, &entry.clone());
                     }
                     None => log!("Not found"),
@@ -132,13 +123,8 @@ impl Requester {
                     None => log!("Not found"),
                 }
             }
-        
-            self.providers.insert(&provider_account_id, &provider);
-            let prov = self
-            .providers
-            .get(&provider_account_id)
-            .expect("no provider with this account id");
 
+            self.providers.insert(&provider_account_id, &provider);
         }
     }
     pub fn get_pair(&self, provider: AccountId, pair: String) -> PriceEntry {
@@ -159,44 +145,12 @@ impl Requester {
             NO_DEPOSIT,
             GAS_FOR_RESOLVE_TRANSFER,
         )
-        .then(ext_self::get_price_callback(
+        .then(ext_self::price_callback(
             env::current_account_id(),
-            0,                 // yocto NEAR to attach to the callback
+            0,                      // yocto NEAR to attach to the callback
             Gas(5_000_000_000_000), // gas to attach to the callback
         ))
     }
-    #[private]
-    pub fn get_price_callback(&self) -> Option<U128> {
-        if env::promise_results_count() != 1 {
-            log!("Expected a result on the callback");
-            return None;
-        }
-
-        // Get response, return false if failed
-        let price: Option<U128> = match env::promise_result(0) {
-            PromiseResult::Successful(value) => {
-                near_sdk::serde_json::from_slice::<Option<U128>>(&value).unwrap()
-            }
-            _ => {
-                log!("Getting info from Pool Party failed");
-                return None;
-            }
-        };
-        price
-    }
-
-    // #[private]
-    // pub fn get_price_callback(#[callback_result] result: Result<U128, near_sdk::PromiseError>) -> Option<U128> {
-    //    let price;
-    //     if let Ok(res) = result.as_ref() {
-    //         price = Some(*res);
-    //     }else{
-    //         log!("Getting info from Pool Party failed");
-    //         return None;
-    //     }
-
-    //    return price;
-    // }
 
     pub fn get_prices(&self, pairs: Vec<String>, providers: Vec<AccountId>) -> Promise {
         fpo::get_prices(
@@ -206,29 +160,11 @@ impl Requester {
             NO_DEPOSIT,
             GAS_FOR_RESOLVE_TRANSFER,
         )
-        .then(ext_self::get_prices_callback(
+        .then(ext_self::prices_callback(
             env::current_account_id(),
-            0,                 // yocto NEAR to attach to the callback
+            0,                      // yocto NEAR to attach to the callback
             Gas(5_000_000_000_000), // gas to attach to the callback
         ))
-    }
-    #[private]
-    pub fn get_prices_callback(&self) -> Vec<Option<U128>> {
-        if env::promise_results_count() != 1 {
-            log!("Expected a result on the callback");
-            return vec![None];
-        }
-        // Get response, return false if failed
-        let prices: Vec<Option<U128>> = match env::promise_result(0) {
-            PromiseResult::Successful(value) => {
-                near_sdk::serde_json::from_slice::<Vec<Option<U128>>>(&value).unwrap()
-            }
-            _ => {
-                log!("Getting info from Pool Party failed");
-                return vec![None];
-            }
-        };
-        prices
     }
 
     pub fn aggregate_avg(
@@ -246,29 +182,11 @@ impl Requester {
             NO_DEPOSIT,
             GAS_FOR_RESOLVE_TRANSFER,
         )
-        .then(ext_self::aggregate_avg_callback(
+        .then(ext_self::price_callback(
             env::current_account_id(),
-            0,                 // yocto NEAR to attach to the callback
+            0,                      // yocto NEAR to attach to the callback
             Gas(5_000_000_000_000), // gas to attach to the callback
         ))
-    }
-    #[private]
-    pub fn aggregate_avg_callback(&self) -> Option<U128> {
-        if env::promise_results_count() != 1 {
-            log!("Expected a result on the callback");
-            return None;
-        }
-        // Get response, return false if failed
-        let avg: Option<U128> = match env::promise_result(0) {
-            PromiseResult::Successful(value) => {
-                near_sdk::serde_json::from_slice::<Option<U128>>(&value).unwrap()
-            }
-            _ => {
-                log!("Getting info from Pool Party failed");
-                return None;
-            }
-        };
-        avg
     }
 
     pub fn aggregate_median(
@@ -285,29 +203,32 @@ impl Requester {
             NO_DEPOSIT,
             GAS_FOR_RESOLVE_TRANSFER,
         )
-        .then(ext_self::aggregate_median_callback(
+        .then(ext_self::price_callback(
             env::current_account_id(),
-            0,                 // yocto NEAR to attach to the callback
+            0,                      // yocto NEAR to attach to the callback
             Gas(5_000_000_000_000), // gas to attach to the callback
         ))
     }
-    #[private]
-    pub fn aggregate_median_callback(&self) -> Option<U128> {
-        if env::promise_results_count() != 1 {
-            log!("Expected a result on the callback");
-            return None;
-        }
 
-        // Get response, return false if failed
-        let avg: Option<U128> = match env::promise_result(0) {
-            PromiseResult::Successful(value) => {
-                near_sdk::serde_json::from_slice::<Option<U128>>(&value).unwrap()
-            }
-            _ => {
-                log!("Getting info from Pool Party failed");
-                return None;
-            }
-        };
-        avg
+    #[private]
+    pub fn price_callback(
+        #[callback_result] result: Result<U128, near_sdk::PromiseError>,
+    ) -> Option<U128> {
+        if let Ok(res) = result.as_ref() {
+            Some(*res)
+        } else {
+            None
+        }
+    }
+
+    #[private]
+    pub fn prices_callback(
+        #[callback_result] result: Result<U128, near_sdk::PromiseError>,
+    ) -> Vec<Option<U128>> {
+        if let Ok(res) = result.as_ref() {
+            vec![Some(*res)]
+        } else {
+            vec![None]
+        }
     }
 }

@@ -1,5 +1,5 @@
 use super::*;
-use near_sdk::json_types::{U128};
+use near_sdk::json_types::U128;
 use near_sdk::serde::Serialize;
 use near_sdk::{Balance, Promise};
 
@@ -159,24 +159,21 @@ impl FPOContract {
 #[cfg(not(target_arch = "wasm32"))]
 #[cfg(test)]
 mod mock_token_basic_tests {
-    
+
     use std::convert::TryInto;
 
     use near_sdk::test_utils::VMContextBuilder;
-    use near_sdk::{testing_env, ONE_YOCTO};
+    use near_sdk::testing_env;
 
     use super::*;
-
 
     fn alice() -> AccountId {
         "alice.near".parse().unwrap()
     }
-  
+
     fn to_valid(account: AccountId) -> AccountId {
         account.try_into().expect("invalid account")
     }
-        
-
 
     fn get_context(predecessor_account_id: AccountId) -> VMContextBuilder {
         let mut builder = VMContextBuilder::new();

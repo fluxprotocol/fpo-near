@@ -96,7 +96,7 @@ impl FPOContract {
             "pairs and provider should be of equal length"
         );
         let min_last_update: u64 = min_last_update.into();
-        providers// Was pairs??
+        providers // Was pairs??
             .iter()
             .enumerate()
             .map(|(i, account_id)| {
@@ -127,7 +127,6 @@ mod tests {
 
     use super::*;
 
-
     fn alice() -> AccountId {
         "alice.near".parse().unwrap()
     }
@@ -141,8 +140,10 @@ mod tests {
         "dina.near".parse().unwrap()
     }
 
-
-    fn get_context(predecessor_account_id: AccountId, current_account_id: AccountId) -> VMContextBuilder {
+    fn get_context(
+        predecessor_account_id: AccountId,
+        current_account_id: AccountId,
+    ) -> VMContextBuilder {
         let mut builder = VMContextBuilder::new();
         builder
             .current_account_id(current_account_id.clone())
@@ -150,7 +151,6 @@ mod tests {
             .predecessor_account_id(predecessor_account_id.clone());
         builder
     }
-
 
     #[test]
     fn aggregate_avg() {

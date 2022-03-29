@@ -1,10 +1,13 @@
 use crate::*;
-use near_sdk::{serde::{Deserialize, Serialize}, Timestamp};
+use near_sdk::{
+    serde::{Deserialize, Serialize},
+    Timestamp,
+};
 
 #[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Debug)]
 pub struct PriceEntry {
-    pub price: U128,                   // Last reported price
-    pub decimals: u16,                 // Amount of decimals (e.g. if 2, 100 = 1.00)
+    pub price: U128,            // Last reported price
+    pub decimals: u16,          // Amount of decimals (e.g. if 2, 100 = 1.00)
     pub last_update: Timestamp, // Time of report
 }
 
@@ -102,12 +105,11 @@ impl FPOContract {
 /// Price pair tests
 #[cfg(test)]
 mod tests {
-   
+
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::testing_env;
 
     use super::*;
-
 
     fn alice() -> AccountId {
         "alice.near".parse().unwrap()
@@ -115,9 +117,11 @@ mod tests {
     fn bob() -> AccountId {
         "bob.near".parse().unwrap()
     }
-  
 
-    fn get_context(predecessor_account_id: AccountId, current_account_id: AccountId) -> VMContextBuilder {
+    fn get_context(
+        predecessor_account_id: AccountId,
+        current_account_id: AccountId,
+    ) -> VMContextBuilder {
         let mut builder = VMContextBuilder::new();
         builder
             .current_account_id(current_account_id.clone())
@@ -126,10 +130,9 @@ mod tests {
         builder
     }
 
-
     #[test]
     fn create_pair() {
-        let context = get_context( alice(), alice());
+        let context = get_context(alice(), alice());
         testing_env!(context.build());
         let mut fpo_contract = FPOContract::new();
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
@@ -172,7 +175,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn create_same_pair() {
-        let context = get_context( alice(), alice());
+        let context = get_context(alice(), alice());
         testing_env!(context.build());
         let mut fpo_contract = FPOContract::new();
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
@@ -186,7 +189,7 @@ mod tests {
 
     #[test]
     fn push_data() {
-        let context = get_context( alice(), alice());
+        let context = get_context(alice(), alice());
         testing_env!(context.build());
         let mut fpo_contract = FPOContract::new();
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
@@ -225,7 +228,7 @@ mod tests {
         );
 
         // switch to bob as signer
-        context = get_context( bob(), bob());
+        context = get_context(bob(), bob());
         testing_env!(context.build());
 
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2700));

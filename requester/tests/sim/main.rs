@@ -1,14 +1,9 @@
-
 use near_fpo::FPOContractContract;
-use near_sdk::{json_types::U128};
 pub use near_sdk::json_types::Base64VecU8;
+use near_sdk::json_types::U128;
 use near_sdk_sim::{call, deploy, init_simulator, to_yocto, ContractAccount, UserAccount};
 use requester::RequesterContract;
 use serde_json::json;
-
-// use near_primitives::{views::FinalExecutionStatus, transaction::ExecutionStatus};
-
-// use near_units::parse_near;
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
     FPO_BYTES => "../res/near_fpo.wasm",
@@ -31,7 +26,7 @@ fn init() -> (
         signer_account: root
     };
     // Deploy the compiled Wasm bytes
-    let requester: ContractAccount<RequesterContract> = deploy!{
+    let requester: ContractAccount<RequesterContract> = deploy! {
         contract: RequesterContract,
         contract_id: "requester",
         bytes: &REQUESTER_BYTES,
@@ -45,7 +40,7 @@ fn init() -> (
 fn simulate_get_price() {
     let (root, fpo, requester) = init();
 
-    let provider1 = root.create_user( "provider1".parse().unwrap() , to_yocto("1000000"));
+    let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
     let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
     call!(provider1, fpo.new()).assert_success();
 
@@ -142,7 +137,7 @@ fn simulate_get_prices() {
             vec![provider1.account_id(), provider2.account_id()]
         )
     );
-    // println!("{:?}", outcome.promise_results());
+    // // println!("{:?}", outcome.promise_results());
     match &outcome.promise_results()[2] {
         Some(res) => {
             // println!("Retrieved Value: {:?}", res.unwrap_json_value());
@@ -210,7 +205,7 @@ fn simulate_agg_avg() {
             0
         )
     );
-    // println!("{:?}", outcome.promise_results());
+    // // println!("{:?}", outcome.promise_results());
     match &outcome.promise_results()[2] {
         Some(res) => {
             // println!("Retrieved Value: {:?}", res.unwrap_json_value());
@@ -278,7 +273,7 @@ fn simulate_agg_median() {
             0
         )
     );
-    // println!("{:?}", outcome.promise_results());
+    // // println!("{:?}", outcome.promise_results());
     match &outcome.promise_results()[2] {
         Some(res) => {
             // println!("Retrieved Value: {:?}", res.unwrap_json_value());
@@ -328,7 +323,7 @@ fn simulate_get_price_call() {
         )
     );
 
-    // println!("{:?}", outcome.promise_results());
+    // // println!("{:?}", outcome.promise_results());
 
     let fetched_entry = call!(
         user,
@@ -408,7 +403,7 @@ fn simulate_get_prices_call() {
         )
     );
 
-    // println!("{:?}", outcome.promise_results());
+    // // println!("{:?}", outcome.promise_results());
 
     let fetched_entry = call!(
         user,
@@ -502,13 +497,13 @@ fn simulate_get_prices_call2() {
         )
     );
 
-    println!("{:?}", outcome.promise_results());
+    // println!("{:?}", outcome.promise_results());
 
     let fetched_entry = call!(
         user,
         requester.get_pair(provider1.account_id(), "ETH/USD".to_string())
     );
-    println!("res: {:?}", fetched_entry);
+    // println!("res: {:?}", fetched_entry);
 
     match &fetched_entry.promise_results()[1] {
         Some(res) => {
@@ -597,7 +592,7 @@ fn simulate_aggregate_avg_call() {
         )
     );
 
-    // println!("{:?}", outcome.promise_results());
+    // // println!("{:?}", outcome.promise_results());
 
     let fetched_entry = call!(
         user,
@@ -692,7 +687,7 @@ fn simulate_aggregate_median_call() {
         )
     );
 
-    // println!("{:?}", outcome.promise_results());
+    // // println!("{:?}", outcome.promise_results());
 
     let fetched_entry = call!(
         user,
