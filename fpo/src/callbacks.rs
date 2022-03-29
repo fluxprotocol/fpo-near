@@ -1,8 +1,10 @@
+use std::convert::TryInto;
+use near_sdk::Timestamp;
 use crate::*;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{ext_contract, Balance, Gas, Promise, log};
-
-const GAS_TO_SEND_PRICE: Gas = 5_000_000_000_000; // Todo: calculate and optimize
+// use near_account_id::AccountId;
+const GAS_TO_SEND_PRICE: Gas = Gas(5_000_000_000_000); // Todo: calculate and optimize
 const ZERO_BALANCE: Balance = 0;
 
 #[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Debug)]
@@ -45,7 +47,7 @@ impl FPOContract {
             vec![provider],
             PriceType::Single,
             vec![price],
-            &receiver_id,
+            receiver_id,
             ZERO_BALANCE,
             GAS_TO_SEND_PRICE,
         )
@@ -68,9 +70,9 @@ impl FPOContract {
             providers,
             PriceType::Multiple,
             entries,
-            &receiver_id,
+            receiver_id,
             ZERO_BALANCE,
-            GAS_TO_SEND_PRICE * num_pairs as Gas,
+            GAS_TO_SEND_PRICE * num_pairs.try_into().unwrap(),
         )
     }
 
@@ -79,7 +81,7 @@ impl FPOContract {
         &self,
         pairs: Vec<String>,
         providers: Vec<AccountId>,
-        min_last_update: WrappedTimestamp,
+        min_last_update: Timestamp,
         receiver_id: AccountId,
     ) -> Promise {
         let sender_id = env::predecessor_account_id();
@@ -90,7 +92,7 @@ impl FPOContract {
             providers,
             PriceType::Mean,
             vec![avg],
-            &receiver_id,
+            receiver_id,
             ZERO_BALANCE,
             GAS_TO_SEND_PRICE,
         )
@@ -101,7 +103,7 @@ impl FPOContract {
         &self,
         pairs: Vec<String>,
         providers: Vec<AccountId>,
-        min_last_update: WrappedTimestamp,
+        min_last_update: Timestamp,
         receiver_id: AccountId,
     ) -> Promise {
         let sender_id = env::predecessor_account_id();
@@ -112,7 +114,7 @@ impl FPOContract {
             providers,
             PriceType::Median,
             vec![median],
-            &receiver_id,
+            receiver_id,
             ZERO_BALANCE,
             GAS_TO_SEND_PRICE,
         )
@@ -123,7 +125,7 @@ impl FPOContract {
         &self,
         pairs: Vec<String>,
         providers: Vec<AccountId>,
-        min_last_update: WrappedTimestamp,
+        min_last_update: Timestamp,
         receiver_id: AccountId,
     ) -> Promise {
         let sender_id = env::predecessor_account_id();
@@ -134,7 +136,7 @@ impl FPOContract {
             providers,
             PriceType::Collect,
             collect,
-            &receiver_id,
+            receiver_id,
             ZERO_BALANCE,
             GAS_TO_SEND_PRICE,
         )

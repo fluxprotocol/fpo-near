@@ -8,10 +8,9 @@ use crate::provider::Provider;
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;
-use near_sdk::json_types::{WrappedTimestamp, U128};
+use near_sdk::json_types::{ U128};
 use near_sdk::{env, near_bindgen, AccountId, BorshStorageKey, PanicOnDefault};
 use storage_manager::AccountStorageBalance;
-near_sdk::setup_alloc!();
 
 /// Global variables
 #[near_bindgen]

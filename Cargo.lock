@@ -1589,6 +1589,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "near-account-id"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5b81ee2cf429b8bc04046d94f725a4f192fe7b13f42d76649d0177fd9ea719d8"
+dependencies = [
+ "borsh 0.9.3",
+ "serde",
+]
+
+[[package]]
 name = "near-crypto"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1629,7 +1639,7 @@ dependencies = [
  "ed25519-dalek",
  "lazy_static",
  "libc",
- "near-account-id",
+ "near-account-id 0.10.0",
  "parity-secp256k1",
  "primitive-types 0.10.1",
  "rand 0.7.3",
@@ -1645,8 +1655,9 @@ name = "near-fpo"
 version = "0.2.1"
 dependencies = [
  "flux-sdk",
- "near-sdk 3.1.0",
- "near-sdk-sim 3.2.0",
+ "near-account-id 0.12.0",
+ "near-sdk 4.0.0-pre.7",
+ "near-sdk-sim",
  "serde",
 ]
 
@@ -1766,7 +1777,7 @@ dependencies = [
  "derive_more",
  "hex",
  "lazy_static",
- "near-account-id",
+ "near-account-id 0.10.0",
  "num-rational",
  "serde",
  "serde_json",
@@ -1937,23 +1948,6 @@ dependencies = [
 
 [[package]]
 name = "near-sdk-sim"
-version = "3.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f9be539455733f5cff63febaee07dcdc48c0a9940856257a1989e84a5552d7a"
-dependencies = [
- "funty",
- "lazy-static-include",
- "near-crypto 0.1.0",
- "near-pool",
- "near-primitives 0.1.0-pre.1",
- "near-runtime",
- "near-sdk 3.1.0",
- "near-store",
- "near-vm-logic 4.0.0-pre.1",
-]
-
-[[package]]
-name = "near-sdk-sim"
 version = "4.0.0-pre.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3bedc5bfe554835bee8e0f00801e644add7fa81b8de8867b6be1d3fb41864390"
@@ -2005,7 +1999,7 @@ checksum = "e781248bed1f8e4792aee0c0362cf8bc831fc9f51573bc43807b5e07e0e7db81"
 dependencies = [
  "borsh 0.9.3",
  "hex",
- "near-account-id",
+ "near-account-id 0.10.0",
  "near-rpc-error-macro 0.10.0",
  "serde",
 ]
@@ -2032,7 +2026,7 @@ dependencies = [
  "borsh 0.9.3",
  "bs58",
  "byteorder",
- "near-account-id",
+ "near-account-id 0.10.0",
  "near-crypto 0.10.0",
  "near-primitives 0.10.0",
  "near-primitives-core 0.10.0",
@@ -2690,7 +2684,7 @@ dependencies = [
  "flux-sdk",
  "near-fpo",
  "near-sdk 4.0.0-pre.7",
- "near-sdk-sim 4.0.0-pre.7",
+ "near-sdk-sim",
  "serde",
  "serde_json",
  "tokio",
