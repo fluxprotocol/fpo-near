@@ -85,6 +85,7 @@ impl Requester {
         }
     }
 
+    /// @dev Called by FPO contract after a `call()` call to forward a price to the consumer.
     pub fn on_price_received(
         &mut self,
         sender_id: AccountId,
@@ -127,6 +128,8 @@ impl Requester {
             self.providers.insert(&provider_account_id, &provider);
         }
     }
+
+    /// @dev Gets a cached price from this contract.
     pub fn get_pair(&self, provider: AccountId, pair: String) -> PriceEntry {
         let pair_name = format!("{}-{}", pair, provider);
 
@@ -137,6 +140,7 @@ impl Requester {
         prov.pairs.get(&pair_name).expect("No pair found")
     }
 
+    /// @dev Fetches a price from the FPO with the answer forwarded to `price_callback()`.
     pub fn get_price(&self, pair: String, provider: AccountId) -> Promise {
         fpo::get_price(
             pair.clone(),
@@ -152,6 +156,7 @@ impl Requester {
         ))
     }
 
+    /// @dev Fetches prices from the FPO with the answer forwarded to `prices_callback()`.
     pub fn get_prices(&self, pairs: Vec<String>, providers: Vec<AccountId>) -> Promise {
         fpo::get_prices(
             pairs.clone(),
@@ -167,13 +172,13 @@ impl Requester {
         ))
     }
 
+    /// @dev Fetches an averaged price from the FPO with the answer forwarded to `price_callback()`.
     pub fn aggregate_avg(
         &self,
         pairs: Vec<String>,
         providers: Vec<AccountId>,
         min_last_update: Timestamp,
     ) -> Promise {
-        log!("REQUESTER GET_PRICE");
         fpo::aggregate_avg(
             pairs.clone(),
             providers.clone(),
@@ -189,6 +194,7 @@ impl Requester {
         ))
     }
 
+    /// @dev Fetches a median price from the FPO with the answer forwarded to `price_callback()`.
     pub fn aggregate_median(
         &self,
         pairs: Vec<String>,
@@ -210,6 +216,7 @@ impl Requester {
         ))
     }
 
+    /// @dev Handles the callback from the FPO after a price is received.
     #[private]
     pub fn price_callback(
         #[callback_result] result: Result<U128, near_sdk::PromiseError>,
@@ -221,6 +228,7 @@ impl Requester {
         }
     }
 
+    /// @dev Handles the callback from the FPO after prices are received.
     #[private]
     pub fn prices_callback(
         #[callback_result] result: Result<U128, near_sdk::PromiseError>,

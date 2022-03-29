@@ -73,7 +73,6 @@ fn simulate_get_price() {
     );
     match &outcome.promise_results()[2] {
         Some(res) => {
-            // println!("Retrieved Value: {:?}", res.unwrap_json_value());
             assert_eq!(res.unwrap_json_value(), "2000");
         }
         None => println!("Retrieved Nothing"),
@@ -137,10 +136,8 @@ fn simulate_get_prices() {
             vec![provider1.account_id(), provider2.account_id()]
         )
     );
-    // // println!("{:?}", outcome.promise_results());
     match &outcome.promise_results()[2] {
         Some(res) => {
-            // println!("Retrieved Value: {:?}", res.unwrap_json_value());
             assert_eq!(res.unwrap_json_value(), json!(vec!["2000", "4000"]));
         }
         None => println!("Retrieved Nothing"),
@@ -205,10 +202,8 @@ fn simulate_agg_avg() {
             0
         )
     );
-    // // println!("{:?}", outcome.promise_results());
     match &outcome.promise_results()[2] {
         Some(res) => {
-            // println!("Retrieved Value: {:?}", res.unwrap_json_value());
             assert_eq!(res.unwrap_json_value(), "3000");
         }
         None => println!("Retrieved Nothing"),
@@ -273,10 +268,8 @@ fn simulate_agg_median() {
             0
         )
     );
-    // // println!("{:?}", outcome.promise_results());
     match &outcome.promise_results()[2] {
         Some(res) => {
-            // println!("Retrieved Value: {:?}", res.unwrap_json_value());
             assert_eq!(res.unwrap_json_value(), "3000");
         }
         None => println!("Retrieved Nothing"),
@@ -314,7 +307,7 @@ fn simulate_get_price_call() {
         &"2000".to_string()
     );
 
-    let outcome = call!(
+    call!(
         user,
         fpo.get_price_call(
             "ETH/USD".to_string(),
@@ -323,17 +316,14 @@ fn simulate_get_price_call() {
         )
     );
 
-    // // println!("{:?}", outcome.promise_results());
 
     let fetched_entry = call!(
         user,
         requester.get_pair(provider1.account_id(), "ETH/USD".to_string())
     );
-    // println!("res: {:?}", fetched_entry);
 
     match &fetched_entry.promise_results()[1] {
         Some(res) => {
-            // println!("Retrieved Value: {:?}", res.unwrap_json_value());
             assert_eq!(res.unwrap_json_value()["price"], "2000");
         }
         None => println!("Retrieved Nothing"),
@@ -394,7 +384,7 @@ fn simulate_get_prices_call() {
         &"45000".to_string()
     );
 
-    let outcome = call!(
+    call!(
         user,
         fpo.get_prices_call(
             vec!["ETH/USD".to_string(), "BTC/USD".to_string()],
@@ -403,13 +393,10 @@ fn simulate_get_prices_call() {
         )
     );
 
-    // // println!("{:?}", outcome.promise_results());
-
     let fetched_entry = call!(
         user,
         requester.get_pair(provider1.account_id(), "ETH/USD".to_string())
     );
-    // println!("res: {:?}", fetched_entry);
 
     match &fetched_entry.promise_results()[1] {
         Some(res) => {
@@ -423,11 +410,9 @@ fn simulate_get_prices_call() {
         user,
         requester.get_pair(provider2.account_id(), "BTC/USD".to_string())
     );
-    // println!("res: {:?}", fetched_entry);
 
     match &fetched_entry.promise_results()[1] {
         Some(res) => {
-            // println!("Retrieved Value: {:?}", res.unwrap_json_value());
             assert_eq!(res.unwrap_json_value()["price"], "45000");
         }
         None => println!("Retrieved Nothing"),
@@ -488,7 +473,7 @@ fn simulate_get_prices_call2() {
         &"4000".to_string()
     );
 
-    let outcome = call!(
+    call!(
         user,
         fpo.get_prices_call(
             vec!["ETH/USD".to_string(), "ETH/USD".to_string()],
@@ -497,17 +482,14 @@ fn simulate_get_prices_call2() {
         )
     );
 
-    // println!("{:?}", outcome.promise_results());
 
     let fetched_entry = call!(
         user,
         requester.get_pair(provider1.account_id(), "ETH/USD".to_string())
     );
-    // println!("res: {:?}", fetched_entry);
 
     match &fetched_entry.promise_results()[1] {
         Some(res) => {
-            // println!("Retrieved Value: {:?}", res.unwrap_json_value());
             assert_eq!(res.unwrap_json_value()["price"], "2000"); // why wrong??
         }
         None => println!("Retrieved Nothing"),
@@ -517,11 +499,9 @@ fn simulate_get_prices_call2() {
         user,
         requester.get_pair(provider2.account_id(), "ETH/USD".to_string())
     );
-    // println!("res: {:?}", fetched_entry);
 
     match &fetched_entry.promise_results()[1] {
         Some(res) => {
-            // println!("Retrieved Value: {:?}", res.unwrap_json_value());
             assert_eq!(res.unwrap_json_value()["price"], "4000");
         }
         None => println!("Retrieved Nothing"),
@@ -582,7 +562,7 @@ fn simulate_aggregate_avg_call() {
         &"4000".to_string()
     );
 
-    let outcome = call!(
+    call!(
         user,
         fpo.aggregate_avg_call(
             vec!["ETH/USD".to_string(), "ETH / USD".to_string()],
@@ -592,17 +572,13 @@ fn simulate_aggregate_avg_call() {
         )
     );
 
-    // // println!("{:?}", outcome.promise_results());
-
     let fetched_entry = call!(
         user,
         requester.get_pair(provider1.account_id(), "ETH/USD".to_string())
     );
-    // println!("res: {:?}", fetched_entry);
 
     match &fetched_entry.promise_results()[1] {
         Some(res) => {
-            // println!("Retrieved Value: {:?}", res.unwrap_json_value());
             assert_eq!(res.unwrap_json_value()["price"], "3000");
         }
         None => println!("Retrieved Nothing"),
@@ -612,11 +588,9 @@ fn simulate_aggregate_avg_call() {
         user,
         requester.get_pair(provider2.account_id(), "ETH / USD".to_string())
     );
-    // println!("res: {:?}", fetched_entry);
 
     match &fetched_entry.promise_results()[1] {
         Some(res) => {
-            // println!("Retrieved Value: {:?}", res.unwrap_json_value());
             assert_eq!(res.unwrap_json_value()["price"], "3000");
         }
         None => println!("Retrieved Nothing"),
@@ -677,7 +651,7 @@ fn simulate_aggregate_median_call() {
         &"4000".to_string()
     );
 
-    let outcome = call!(
+    call!(
         user,
         fpo.aggregate_median_call(
             vec!["ETH/USD".to_string(), "ETH / USD".to_string()],
@@ -687,17 +661,13 @@ fn simulate_aggregate_median_call() {
         )
     );
 
-    // // println!("{:?}", outcome.promise_results());
-
     let fetched_entry = call!(
         user,
         requester.get_pair(provider1.account_id(), "ETH/USD".to_string())
     );
-    // println!("res: {:?}", fetched_entry);
 
     match &fetched_entry.promise_results()[1] {
         Some(res) => {
-            // println!("Retrieved Value: {:?}", res.unwrap_json_value());
             assert_eq!(res.unwrap_json_value()["price"], "3000");
         }
         None => println!("Retrieved Nothing"),
@@ -707,11 +677,9 @@ fn simulate_aggregate_median_call() {
         user,
         requester.get_pair(provider2.account_id(), "ETH / USD".to_string())
     );
-    // println!("res: {:?}", fetched_entry);
 
     match &fetched_entry.promise_results()[1] {
         Some(res) => {
-            // println!("Retrieved Value: {:?}", res.unwrap_json_value());
             assert_eq!(res.unwrap_json_value()["price"], "3000");
         }
         None => println!("Retrieved Nothing"),
