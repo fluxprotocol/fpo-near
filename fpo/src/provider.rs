@@ -40,7 +40,7 @@ impl Provider {
     }
 
     /// Sets the answer for a given price pair by a provider
-    pub fn set_price(&mut self, pair: String, price: U128, updated: U64) {
+    pub fn set_price(&mut self, pair: String, price: U128, updated: u64) {
         let mut entry = self.pairs.get(&pair).expect("pair does not exist");
         entry.last_update = updated;
         entry.price = price;
