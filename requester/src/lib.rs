@@ -1,16 +1,16 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;
-use near_sdk::json_types::{WrappedTimestamp, U128};
+use near_sdk::json_types::{ U128};
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::Balance;
+use near_sdk::{Balance, PromiseError};
 use near_sdk::{
     env, ext_contract, log, near_bindgen, AccountId, Gas, PanicOnDefault, Promise, PromiseResult,
 };
 
-near_sdk::setup_alloc!();
+// near_sdk::setup_alloc!();
 
 const NO_DEPOSIT: Balance = 0;
-const GAS_FOR_RESOLVE_TRANSFER: Gas = 5_000_000_000_000;
+const GAS_FOR_RESOLVE_TRANSFER: Gas = Gas(5_000_000_000_000);
 
 #[ext_contract(fpo)]
 trait FPO {
@@ -20,13 +20,13 @@ trait FPO {
         &self,
         pairs: Vec<String>,
         providers: Vec<AccountId>,
-        min_last_update: WrappedTimestamp,
+        min_last_update: flux_sdk::WrappedTimestamp,
     ) -> Option<U128>;
     fn aggregate_median(
         &self,
         pairs: Vec<String>,
         providers: Vec<AccountId>,
-        min_last_update: WrappedTimestamp,
+        min_last_update: flux_sdk::WrappedTimestamp,
     ) -> Option<U128>;
 }
 
@@ -154,48 +154,61 @@ impl Requester {
         fpo::get_price(
             pair.clone(),
             provider.clone(),
-            &self.oracle,
+            self.oracle.clone(),
             NO_DEPOSIT,
             GAS_FOR_RESOLVE_TRANSFER,
         )
         .then(ext_self::get_price_callback(
-            &env::current_account_id(),
+            env::current_account_id(),
             0,                 // yocto NEAR to attach to the callback
-            5_000_000_000_000, // gas to attach to the callback
+            Gas(5_000_000_000_000), // gas to attach to the callback
         ))
     }
+    // #[private]
+    // pub fn get_price_callback(&self) -> Option<U128> {
+    //     if env::promise_results_count() != 1 {
+    //         log!("Expected a result on the callback");
+    //         return None;
+    //     }
+
+    //     // Get response, return false if failed
+    //     let price: Option<U128> = match env::promise_result(0) {
+    //         PromiseResult::Successful(value) => {
+    //             near_sdk::serde_json::from_slice::<Option<U128>>(&value).unwrap()
+    //         }
+    //         _ => {
+    //             log!("Getting info from Pool Party failed");
+    //             return None;
+    //         }
+    //     };
+    //     price
+    // }
+
     #[private]
-    pub fn get_price_callback(&self) -> Option<U128> {
-        if env::promise_results_count() != 1 {
-            log!("Expected a result on the callback");
+    pub fn get_price_callback(#[callback_result] result: Result<U128, near_sdk::PromiseError>) -> Option<U128> {
+       let price;
+        if let Ok(res) = result.as_ref() {
+            price = Some(*res);
+        }else{
+            log!("Getting info from Pool Party failed");
             return None;
         }
 
-        // Get response, return false if failed
-        let price: Option<U128> = match env::promise_result(0) {
-            PromiseResult::Successful(value) => {
-                near_sdk::serde_json::from_slice::<Option<U128>>(&value).unwrap()
-            }
-            _ => {
-                log!("Getting info from Pool Party failed");
-                return None;
-            }
-        };
-        price
+       return price;
     }
 
     pub fn get_prices(&self, pairs: Vec<String>, providers: Vec<AccountId>) -> Promise {
         fpo::get_prices(
             pairs.clone(),
             providers.clone(),
-            &self.oracle,
+            self.oracle.clone(),
             NO_DEPOSIT,
             GAS_FOR_RESOLVE_TRANSFER,
         )
         .then(ext_self::get_prices_callback(
-            &env::current_account_id(),
+            env::current_account_id(),
             0,                 // yocto NEAR to attach to the callback
-            5_000_000_000_000, // gas to attach to the callback
+            Gas(5_000_000_000_000), // gas to attach to the callback
         ))
     }
     #[private]
@@ -221,21 +234,21 @@ impl Requester {
         &self,
         pairs: Vec<String>,
         providers: Vec<AccountId>,
-        min_last_update: WrappedTimestamp,
+        min_last_update: flux_sdk::WrappedTimestamp,
     ) -> Promise {
         log!("REQUESTER GET_PRICE");
         fpo::aggregate_avg(
             pairs.clone(),
             providers.clone(),
             min_last_update.clone(),
-            &self.oracle,
+            self.oracle.clone(),
             NO_DEPOSIT,
             GAS_FOR_RESOLVE_TRANSFER,
         )
         .then(ext_self::aggregate_avg_callback(
-            &env::current_account_id(),
+            env::current_account_id(),
             0,                 // yocto NEAR to attach to the callback
-            5_000_000_000_000, // gas to attach to the callback
+            Gas(5_000_000_000_000), // gas to attach to the callback
         ))
     }
     #[private]
@@ -261,20 +274,20 @@ impl Requester {
         &self,
         pairs: Vec<String>,
         providers: Vec<AccountId>,
-        min_last_update: WrappedTimestamp,
+        min_last_update: flux_sdk::WrappedTimestamp,
     ) -> Promise {
         fpo::aggregate_median(
             pairs.clone(),
             providers.clone(),
             min_last_update.clone(),
-            &self.oracle,
+            self.oracle.clone(),
             NO_DEPOSIT,
             GAS_FOR_RESOLVE_TRANSFER,
         )
         .then(ext_self::aggregate_median_callback(
-            &env::current_account_id(),
+            env::current_account_id(),
             0,                 // yocto NEAR to attach to the callback
-            5_000_000_000_000, // gas to attach to the callback
+            Gas(5_000_000_000_000), // gas to attach to the callback
         ))
     }
     #[private]
