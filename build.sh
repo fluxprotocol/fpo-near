@@ -8,4 +8,4 @@ if [ ! -d ./res ]; then
 fi
 
 cp ./target/wasm32-unknown-unknown/release/near_fpo.wasm ./res
-cp ./target/wasm32-unknown-unknown/release/requester.wasm ./res
+cp ./target/wasm32-unknown-unknown/release/consumer.wasm ./res

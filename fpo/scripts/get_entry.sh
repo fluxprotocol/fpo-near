@@ -1,5 +1,5 @@
 
-accountId=${accountId:-requester.mennat0.testnet} 
+accountId=${accountId:-consumer.mennat0.testnet} 
 
 masterAccountId=${masterAccountId:-mennat0.testnet}
 initialBalance=${initialBalance:-5}
@@ -8,7 +8,7 @@ fpoAccountId=${fpoAccountId:-fpo.mennat0.testnet}
 pair=${pair:-ETH / USD}
 provider=${provider:-provider.mennat0.testnet}
 
-# reset requester account
+# reset consumer account
 NEAR_ENV=$network near delete $accountId $masterAccountId
 NEAR_ENV=$network near create-account $accountId --masterAccount $masterAccountId --initialBalance $initialBalance
 

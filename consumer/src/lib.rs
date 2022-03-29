@@ -59,7 +59,7 @@ impl Provider {
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
-pub struct Requester {
+pub struct Consumer {
     oracle: AccountId,
     providers: LookupMap<AccountId, Provider>, // maps:  AccountId => Provider
 }
@@ -76,7 +76,7 @@ pub enum PriceType {
 }
 
 #[near_bindgen]
-impl Requester {
+impl Consumer {
     #[init]
     pub fn new(oracle: AccountId) -> Self {
         Self {

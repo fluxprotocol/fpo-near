@@ -458,6 +458,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
 
 [[package]]
+name = "consumer"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "flux-sdk",
+ "near-fpo",
+ "near-sdk",
+ "near-sdk-sim",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "convert_case"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2633,20 +2647,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3acd125665422973a33ac9d3dd2df85edad0f4ae9b00dafb1a05e43a9f5ef8e7"
 dependencies = [
  "winapi",
-]
-
-[[package]]
-name = "requester"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "flux-sdk",
- "near-fpo",
- "near-sdk",
- "near-sdk-sim",
- "serde",
- "serde_json",
- "tokio",
 ]
 
 [[package]]

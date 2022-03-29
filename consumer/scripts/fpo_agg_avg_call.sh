@@ -1,5 +1,5 @@
 
-accountId=${accountId:-requester.mennat0.testnet} 
+accountId=${accountId:-consumer.mennat0.testnet} 
 
 masterAccountId=${masterAccountId:-mennat0.testnet}
 initialBalance=${initialBalance:-5}
@@ -13,7 +13,7 @@ receiver_id=${receiver_id:-req0.mennat0.testnet}
 
 min_last_update=${min_last_update:-0}
 
-# reset requester account
+# reset consumer account
 NEAR_ENV=$network near delete $accountId $masterAccountId
 NEAR_ENV=$network near create-account $accountId --masterAccount $masterAccountId --initialBalance $initialBalance
 
