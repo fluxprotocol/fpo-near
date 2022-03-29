@@ -1,6 +1,6 @@
 use near_fpo::FPOContractContract;
+pub use near_sdk::json_types::Base64VecU8;
 use near_sdk::json_types::U128;
-pub use near_sdk::json_types::{Base64VecU8};
 use near_sdk_sim::{call, deploy, init_simulator, to_yocto, ContractAccount, UserAccount};
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {

@@ -1,8 +1,8 @@
-use std::convert::TryInto;
-use near_sdk::Timestamp;
 use crate::*;
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{ext_contract, Balance, Gas, Promise, log};
+use near_sdk::Timestamp;
+use near_sdk::{ext_contract, log, Balance, Gas, Promise};
+use std::convert::TryInto;
 // use near_account_id::AccountId;
 const GAS_TO_SEND_PRICE: Gas = Gas(5_000_000_000_000); // Todo: calculate and optimize
 const ZERO_BALANCE: Balance = 0;

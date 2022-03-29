@@ -1,5 +1,4 @@
 use crate::*;
-use near_sdk::json_types::U64;
 use price_pair::PriceEntry;
 
 #[derive(BorshDeserialize, BorshSerialize)]
