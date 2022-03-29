@@ -1,6 +1,6 @@
 
 use near_fpo::FPOContractContract;
-use near_sdk::{json_types::U128, AccountId};
+use near_sdk::{json_types::U128};
 pub use near_sdk::json_types::Base64VecU8;
 use near_sdk_sim::{call, deploy, init_simulator, to_yocto, ContractAccount, UserAccount};
 use requester::RequesterContract;
@@ -89,8 +89,8 @@ fn simulate_get_price() {
 fn simulate_get_prices() {
     let (root, fpo, requester) = init();
 
-    let provider1 = root.create_user("provider1".to_string(), to_yocto("1000000"));
-    let provider2 = root.create_user("provider2".to_string(), to_yocto("1000000"));
+    let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
+    let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
 
     call!(root, fpo.new()).assert_success();
     call!(root, requester.new(fpo.account_id())).assert_success();
@@ -156,8 +156,8 @@ fn simulate_get_prices() {
 fn simulate_agg_avg() {
     let (root, fpo, requester) = init();
 
-    let provider1 = root.create_user("provider1".to_string(), to_yocto("1000000"));
-    let provider2 = root.create_user("provider2".to_string(), to_yocto("1000000"));
+    let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
+    let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
 
     call!(root, fpo.new()).assert_success();
     call!(root, requester.new(fpo.account_id())).assert_success();
@@ -207,7 +207,7 @@ fn simulate_agg_avg() {
         requester.aggregate_avg(
             vec!["ETH/USD".to_string(), "ETH/USD".to_string()],
             vec![provider1.account_id(), provider2.account_id()],
-            U64(0)
+            0
         )
     );
     // println!("{:?}", outcome.promise_results());
@@ -224,8 +224,8 @@ fn simulate_agg_avg() {
 fn simulate_agg_median() {
     let (root, fpo, requester) = init();
 
-    let provider1 = root.create_user("provider1".to_string(), to_yocto("1000000"));
-    let provider2 = root.create_user("provider2".to_string(), to_yocto("1000000"));
+    let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
+    let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
 
     call!(root, fpo.new()).assert_success();
     call!(root, requester.new(fpo.account_id())).assert_success();
@@ -275,7 +275,7 @@ fn simulate_agg_median() {
         requester.aggregate_median(
             vec!["ETH/USD".to_string(), "ETH/USD".to_string()],
             vec![provider1.account_id(), provider2.account_id()],
-            U64(0)
+            0
         )
     );
     // println!("{:?}", outcome.promise_results());
@@ -292,8 +292,8 @@ fn simulate_agg_median() {
 fn simulate_get_price_call() {
     let (root, fpo, requester) = init();
 
-    let provider1 = root.create_user("provider1".to_string(), to_yocto("1000000"));
-    let user = root.create_user("user".to_string(), to_yocto("1000000"));
+    let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
+    let user = root.create_user("user".parse().unwrap(), to_yocto("1000000"));
 
     call!(root, fpo.new()).assert_success();
     call!(root, requester.new(fpo.account_id())).assert_success();
@@ -349,10 +349,10 @@ fn simulate_get_price_call() {
 fn simulate_get_prices_call() {
     let (root, fpo, requester) = init();
 
-    let provider1 = root.create_user("provider1".to_string(), to_yocto("1000000"));
-    let provider2 = root.create_user("provider2".to_string(), to_yocto("1000000"));
+    let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
+    let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
 
-    let user = root.create_user("user".to_string(), to_yocto("1000000"));
+    let user = root.create_user("user".parse().unwrap(), to_yocto("1000000"));
 
     call!(root, fpo.new()).assert_success();
     call!(root, requester.new(fpo.account_id())).assert_success();
@@ -443,10 +443,10 @@ fn simulate_get_prices_call() {
 fn simulate_get_prices_call2() {
     let (root, fpo, requester) = init();
 
-    let provider1 = root.create_user("provider1".to_string(), to_yocto("1000000"));
-    let provider2 = root.create_user("provider2".to_string(), to_yocto("1000000"));
+    let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
+    let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
 
-    let user = root.create_user("user".to_string(), to_yocto("1000000"));
+    let user = root.create_user("user".parse().unwrap(), to_yocto("1000000"));
 
     call!(root, fpo.new()).assert_success();
     call!(root, requester.new(fpo.account_id())).assert_success();
@@ -537,10 +537,10 @@ fn simulate_get_prices_call2() {
 fn simulate_aggregate_avg_call() {
     let (root, fpo, requester) = init();
 
-    let provider1 = root.create_user("provider1".to_string(), to_yocto("1000000"));
-    let provider2 = root.create_user("provider2".to_string(), to_yocto("1000000"));
+    let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
+    let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
 
-    let user = root.create_user("user".to_string(), to_yocto("1000000"));
+    let user = root.create_user("user".parse().unwrap(), to_yocto("1000000"));
 
     call!(root, fpo.new()).assert_success();
     call!(root, requester.new(fpo.account_id())).assert_success();
@@ -592,7 +592,7 @@ fn simulate_aggregate_avg_call() {
         fpo.aggregate_avg_call(
             vec!["ETH/USD".to_string(), "ETH / USD".to_string()],
             vec![provider1.account_id(), provider2.account_id()],
-            U64(0),
+            0,
             requester.account_id()
         )
     );
@@ -632,10 +632,10 @@ fn simulate_aggregate_avg_call() {
 fn simulate_aggregate_median_call() {
     let (root, fpo, requester) = init();
 
-    let provider1 = root.create_user("provider1".to_string(), to_yocto("1000000"));
-    let provider2 = root.create_user("provider2".to_string(), to_yocto("1000000"));
+    let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
+    let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
 
-    let user = root.create_user("user".to_string(), to_yocto("1000000"));
+    let user = root.create_user("user".parse().unwrap(), to_yocto("1000000"));
 
     call!(root, fpo.new()).assert_success();
     call!(root, requester.new(fpo.account_id())).assert_success();
@@ -687,7 +687,7 @@ fn simulate_aggregate_median_call() {
         fpo.aggregate_median_call(
             vec!["ETH/USD".to_string(), "ETH / USD".to_string()],
             vec![provider1.account_id(), provider2.account_id()],
-            U64(0),
+            0,
             requester.account_id()
         )
     );

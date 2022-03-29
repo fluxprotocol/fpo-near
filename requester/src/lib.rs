@@ -3,6 +3,7 @@ use near_sdk::collections::LookupMap;
 use near_sdk::json_types::{ U128};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{Balance, PromiseError};
+use near_sdk::Timestamp;
 use near_sdk::{
     env, ext_contract, log, near_bindgen, AccountId, Gas, PanicOnDefault, Promise, PromiseResult,
 };
@@ -20,13 +21,13 @@ trait FPO {
         &self,
         pairs: Vec<String>,
         providers: Vec<AccountId>,
-        min_last_update: flux_sdk::WrappedTimestamp,
+        min_last_update: Timestamp,
     ) -> Option<U128>;
     fn aggregate_median(
         &self,
         pairs: Vec<String>,
         providers: Vec<AccountId>,
-        min_last_update: flux_sdk::WrappedTimestamp,
+        min_last_update: Timestamp,
     ) -> Option<U128>;
 }
 
@@ -164,38 +165,38 @@ impl Requester {
             Gas(5_000_000_000_000), // gas to attach to the callback
         ))
     }
-    // #[private]
-    // pub fn get_price_callback(&self) -> Option<U128> {
-    //     if env::promise_results_count() != 1 {
-    //         log!("Expected a result on the callback");
-    //         return None;
-    //     }
-
-    //     // Get response, return false if failed
-    //     let price: Option<U128> = match env::promise_result(0) {
-    //         PromiseResult::Successful(value) => {
-    //             near_sdk::serde_json::from_slice::<Option<U128>>(&value).unwrap()
-    //         }
-    //         _ => {
-    //             log!("Getting info from Pool Party failed");
-    //             return None;
-    //         }
-    //     };
-    //     price
-    // }
-
     #[private]
-    pub fn get_price_callback(#[callback_result] result: Result<U128, near_sdk::PromiseError>) -> Option<U128> {
-       let price;
-        if let Ok(res) = result.as_ref() {
-            price = Some(*res);
-        }else{
-            log!("Getting info from Pool Party failed");
+    pub fn get_price_callback(&self) -> Option<U128> {
+        if env::promise_results_count() != 1 {
+            log!("Expected a result on the callback");
             return None;
         }
 
-       return price;
+        // Get response, return false if failed
+        let price: Option<U128> = match env::promise_result(0) {
+            PromiseResult::Successful(value) => {
+                near_sdk::serde_json::from_slice::<Option<U128>>(&value).unwrap()
+            }
+            _ => {
+                log!("Getting info from Pool Party failed");
+                return None;
+            }
+        };
+        price
     }
+
+    // #[private]
+    // pub fn get_price_callback(#[callback_result] result: Result<U128, near_sdk::PromiseError>) -> Option<U128> {
+    //    let price;
+    //     if let Ok(res) = result.as_ref() {
+    //         price = Some(*res);
+    //     }else{
+    //         log!("Getting info from Pool Party failed");
+    //         return None;
+    //     }
+
+    //    return price;
+    // }
 
     pub fn get_prices(&self, pairs: Vec<String>, providers: Vec<AccountId>) -> Promise {
         fpo::get_prices(
@@ -234,7 +235,7 @@ impl Requester {
         &self,
         pairs: Vec<String>,
         providers: Vec<AccountId>,
-        min_last_update: flux_sdk::WrappedTimestamp,
+        min_last_update: Timestamp,
     ) -> Promise {
         log!("REQUESTER GET_PRICE");
         fpo::aggregate_avg(
@@ -274,7 +275,7 @@ impl Requester {
         &self,
         pairs: Vec<String>,
         providers: Vec<AccountId>,
-        min_last_update: flux_sdk::WrappedTimestamp,
+        min_last_update: Timestamp,
     ) -> Promise {
         fpo::aggregate_median(
             pairs.clone(),
