@@ -1,12 +1,18 @@
 #!/bin/bash
 pair=${pair:-ETH / USD}
-# provider=${provider:-provider1.mennat0.testnet}
 provider=${provider:-provider0.mennat0.testnet}
-
-receiver_id=${receiver_id:-req0.mennat0.testnet}
-
-
-amount=${amount:-0}
+receiverId=${receiverId:-req0.mennat0.testnet}
 accountId=${accountId:-fpo.mennat0.testnet}
 
-near call $accountId get_price_call "{\"pair\": \"$pair\", \"provider\": \"$provider\", \"receiver_id\": \"$receiver_id\"}" --accountId $accountId --gas=300000000000000
+while [ $# -gt 0 ]; do
+
+   if [[ $1 == *"--"* ]]; then
+        param="${1/--/}"
+        declare $param="$2"
+        # echo $1 $2 // Optional to see the parameter:value result
+   fi
+
+  shift
+done
+
+near call $accountId get_price_call "{\"pair\": \"$pair\", \"provider\": \"$provider\", \"receiver_id\": \"$receiverId\"}" --accountId $accountId --gas=300000000000000
