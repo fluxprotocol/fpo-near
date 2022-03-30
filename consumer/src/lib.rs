@@ -43,7 +43,7 @@ pub struct PriceEntry {
 #[derive(BorshDeserialize, BorshSerialize)]
 
 pub struct Provider {
-    pub pairs: LookupMap<String, PriceEntry>, // Maps "{TICKER_1}/{TICKER_2}" => PriceEntry - e.g.: ETH/USD => PriceEntry
+    pub pairs: LookupMap<String, PriceEntry>, // Maps "{TICKER_1}/{TICKER_2}-{PROVIDER}" => PriceEntry - e.g.: ETH/USD => PriceEntry
 }
 
 impl Provider {
