@@ -184,21 +184,33 @@ mod tests {
 
         assert_eq!(
             U128(2000),
-            fpo_contract.get_entry("ETH/USD".to_string(), alice()).unwrap().price
+            fpo_contract
+                .get_entry("ETH/USD".to_string(), alice())
+                .unwrap()
+                .price
         );
 
         assert_eq!(
             U128(4000),
-            fpo_contract.get_entry("ETH/USD".to_string(), bob()).unwrap().price
+            fpo_contract
+                .get_entry("ETH/USD".to_string(), bob())
+                .unwrap()
+                .price
         );
 
         assert_eq!(
             U128(4000),
-            fpo_contract.get_entry("ETH/USD".to_string(), carol()).unwrap().price
+            fpo_contract
+                .get_entry("ETH/USD".to_string(), carol())
+                .unwrap()
+                .price
         );
         assert_eq!(
             U128(4000),
-            fpo_contract.get_entry("ETH/USD".to_string(), carol()).unwrap().price
+            fpo_contract
+                .get_entry("ETH/USD".to_string(), carol())
+                .unwrap()
+                .price
         );
 
         let pairs = vec![
@@ -243,21 +255,33 @@ mod tests {
 
         assert_eq!(
             U128(2000),
-            fpo_contract.get_entry("ETH/USD".to_string(), alice()).unwrap().price
+            fpo_contract
+                .get_entry("ETH/USD".to_string(), alice())
+                .unwrap()
+                .price
         );
 
         assert_eq!(
             U128(2000),
-            fpo_contract.get_entry("ETH/USD".to_string(), bob()).unwrap().price
+            fpo_contract
+                .get_entry("ETH/USD".to_string(), bob())
+                .unwrap()
+                .price
         );
 
         assert_eq!(
             U128(4000),
-            fpo_contract.get_entry("ETH/USD".to_string(), carol()).unwrap().price
+            fpo_contract
+                .get_entry("ETH/USD".to_string(), carol())
+                .unwrap()
+                .price
         );
         assert_eq!(
             U128(4000),
-            fpo_contract.get_entry("ETH/USD".to_string(), dina()).unwrap().price
+            fpo_contract
+                .get_entry("ETH/USD".to_string(), dina())
+                .unwrap()
+                .price
         );
 
         let pairs = vec![

@@ -234,11 +234,17 @@ mod tests {
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2700));
         assert_eq!(
             U128(2700),
-            fpo_contract.get_entry("ETH/USD".to_string(), bob()).unwrap().price
+            fpo_contract
+                .get_entry("ETH/USD".to_string(), bob())
+                .unwrap()
+                .price
         );
         assert_eq!(
             U128(2500),
-            fpo_contract.get_entry("ETH/USD".to_string(), alice()).unwrap().price
+            fpo_contract
+                .get_entry("ETH/USD".to_string(), alice())
+                .unwrap()
+                .price
         );
 
         fpo_contract.push_data("ETH/USD".to_string(), U128(3000));

@@ -45,10 +45,7 @@ fn simulate_create_pair() {
         "Returned Price: {:?}",
         &price_entry.unwrap_json_value()["price"]
     );
-    debug_assert_eq!(
-        &price_entry.unwrap_json_value()["price"].to_owned(),
-        "2000"
-    );
+    debug_assert_eq!(&price_entry.unwrap_json_value()["price"].to_owned(), "2000");
 }
 
 #[test]
@@ -99,10 +96,7 @@ fn simulate_push_data() {
         "Returned Price: {:?}",
         &price_entry.unwrap_json_value()["price"]
     );
-    debug_assert_eq!(
-        &price_entry.unwrap_json_value()["price"].to_owned(),
-        "4000"
-    );
+    debug_assert_eq!(&price_entry.unwrap_json_value()["price"].to_owned(), "4000");
 }
 
 #[test]
@@ -133,10 +127,7 @@ fn simulate_different_providers() {
         "Returned Price: {:?}",
         &price_entry.unwrap_json_value()["price"].to_owned()
     );
-    debug_assert_eq!(
-        &price_entry.unwrap_json_value()["price"].to_owned(),
-        "4000"
-    );
+    debug_assert_eq!(&price_entry.unwrap_json_value()["price"].to_owned(), "4000");
 
     // output and check root's data
     let price_entry = call!(
@@ -147,10 +138,7 @@ fn simulate_different_providers() {
         "Returned Price: {:?}",
         &price_entry.unwrap_json_value()["price"].to_owned()
     );
-    debug_assert_eq!(
-        &price_entry.unwrap_json_value()["price"].to_owned(),
-        "2000"
-    );
+    debug_assert_eq!(&price_entry.unwrap_json_value()["price"].to_owned(), "2000");
 }
 
 #[test]
@@ -188,10 +176,7 @@ fn simulate_different_pairs() {
         "Returned Price: {:?}",
         &price_entry.unwrap_json_value()["price"].to_owned()
     );
-    debug_assert_eq!(
-        &price_entry.unwrap_json_value()["price"].to_owned(),
-        "4000"
-    );
+    debug_assert_eq!(&price_entry.unwrap_json_value()["price"].to_owned(), "4000");
 
     // output and check bob's data
     let price_entry = call!(
