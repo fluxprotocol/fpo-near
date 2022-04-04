@@ -52,7 +52,7 @@ impl Provider {
             pairs: LookupMap::new("ps".as_bytes()),
         }
     }
-    pub fn set_pair(&mut self, pair: &str, price: &PriceEntry) {
+    pub fn set_pair(&mut self, pair: String, price: &PriceEntry) {
         self.pairs.insert(&pair.to_string(), price);
     }
 }
@@ -95,8 +95,8 @@ impl Consumer {
     pub fn on_price_received(
         &mut self,
         sender_id: AccountId,
-        pairs: &[String],
-        providers: &[AccountId],
+        pairs: Vec<String>,
+        providers: Vec<AccountId>,
         price_type: PriceType,
         results: Vec<Option<U128>>,
     ) {
@@ -113,7 +113,7 @@ impl Consumer {
                             sender: sender_id.clone(),
                             price_type,
                         };
-                        provider.set_pair(&pair_name, &entry.clone());
+                        provider.set_pair(pair_name, &entry.clone());
                     }
                     None => log!("Not found"),
                 }
@@ -125,7 +125,7 @@ impl Consumer {
                             sender: sender_id.clone(),
                             price_type,
                         };
-                        provider.set_pair(&pair_name, &entry);
+                        provider.set_pair(pair_name, &entry);
                     }
                     None => log!("Not found"),
                 }
@@ -136,7 +136,7 @@ impl Consumer {
     }
 
     /// @dev Gets a cached price from this contract.
-    pub fn get_pair(&self, provider: AccountId, pair: &str) -> PriceEntry {
+    pub fn get_pair(&self, provider: AccountId, pair: String) -> PriceEntry {
         let pair_name = format!("{}-{}", pair, provider);
 
         let prov = self
