@@ -42,7 +42,7 @@ impl FPOContract {
         receiver_id: AccountId,
     ) -> Promise {
         let sender_id = env::predecessor_account_id();
-        let price = self.get_price(pair.clone(), provider.clone());
+        let price = self.get_price(&pair, &provider);
         ext_price_consumer::on_price_received(
             sender_id,
             vec![pair],
@@ -63,7 +63,7 @@ impl FPOContract {
         receiver_id: AccountId,
     ) -> Promise {
         let sender_id = env::predecessor_account_id();
-        let entries = self.get_prices(pairs.clone(), providers.clone());
+        let entries = self.get_prices(&pairs, &providers);
         log!("entries: {:?}", entries);
         let num_pairs = pairs.len();
         ext_price_consumer::on_price_received(
@@ -87,7 +87,7 @@ impl FPOContract {
         receiver_id: AccountId,
     ) -> Promise {
         let sender_id = env::predecessor_account_id();
-        let avg = self.aggregate_avg(&pairs, providers.clone(), min_last_update);
+        let avg = self.aggregate_avg(&pairs, &providers, min_last_update);
         ext_price_consumer::on_price_received(
             sender_id,
             pairs,
@@ -109,7 +109,7 @@ impl FPOContract {
         receiver_id: AccountId,
     ) -> Promise {
         let sender_id = env::predecessor_account_id();
-        let median = self.aggregate_median(pairs.clone(), providers.clone(), min_last_update);
+        let median = self.aggregate_median(&pairs, &providers, min_last_update);
         ext_price_consumer::on_price_received(
             sender_id,
             pairs,
@@ -131,7 +131,7 @@ impl FPOContract {
         receiver_id: AccountId,
     ) -> Promise {
         let sender_id = env::predecessor_account_id();
-        let collect = self.aggregate_collect(pairs.clone(), providers.clone(), min_last_update);
+        let collect = self.aggregate_collect(&pairs, &providers, min_last_update);
         ext_price_consumer::on_price_received(
             sender_id,
             pairs,

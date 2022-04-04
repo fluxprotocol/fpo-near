@@ -35,7 +35,7 @@ pub trait StorageManager {
 
     fn storage_balance_bounds(&self) -> StorageBalanceBounds;
 
-    fn storage_balance_of(&self, account_id: AccountId) -> Option<StorageBalance>;
+    fn storage_balance_of(&self, account_id: &AccountId) -> Option<StorageBalance>;
 }
 
 fn assert_one_yocto() {
@@ -100,13 +100,11 @@ impl StorageManager for FPOContract {
         }
     }
 
-    fn storage_balance_of(&self, account_id: AccountId) -> Option<StorageBalance> {
-        self.accounts
-            .get(&account_id)
-            .map(|account| StorageBalance {
-                total: U128(account.total),
-                available: U128(account.available),
-            })
+    fn storage_balance_of(&self, account_id: &AccountId) -> Option<StorageBalance> {
+        self.accounts.get(account_id).map(|account| StorageBalance {
+            total: U128(account.total),
+            available: U128(account.available),
+        })
     }
 }
 
