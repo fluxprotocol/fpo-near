@@ -20,7 +20,7 @@ impl FPOContract {
         let mut provider = self
             .providers
             .get(&env::predecessor_account_id())
-            .unwrap_or_else(|| Provider::new());
+            .unwrap_or_else(Provider::new);
 
         let pair_name = format!("{}-{}", pair, env::predecessor_account_id());
         assert!(
@@ -45,7 +45,7 @@ impl FPOContract {
     pub fn push_data(&mut self, pair: String, price: U128) {
         let mut provider = self.get_provider_expect(&env::predecessor_account_id());
         let pair_name = format!("{}-{}", pair, env::predecessor_account_id());
-        provider.set_price(pair_name, price, env::block_timestamp().into());
+        provider.set_price(pair_name, price, env::block_timestamp());
         self.providers
             .insert(&env::predecessor_account_id(), &provider);
     }

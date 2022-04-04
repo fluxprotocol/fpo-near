@@ -52,8 +52,14 @@ impl Provider {
             pairs: LookupMap::new("ps".as_bytes()),
         }
     }
-    pub fn set_pair(&mut self, pair: &String, price: &PriceEntry) {
-        self.pairs.insert(pair, price);
+    pub fn set_pair(&mut self, pair: &str, price: &PriceEntry) {
+        self.pairs.insert(&pair.to_string(), price);
+    }
+}
+
+impl Default for Provider {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -96,7 +102,7 @@ impl Consumer {
     ) {
         for (index, provider) in providers.iter().enumerate() {
             let provider_account_id = provider.clone();
-            let mut provider = self.providers.get(&provider).unwrap_or(Provider::new());
+            let mut provider = self.providers.get(provider).unwrap_or_else(Provider::new);
             let pair_name = format!("{}-{}", pairs[index], provider_account_id);
 
             if price_type == PriceType::Mean || price_type == PriceType::Median {
@@ -105,7 +111,7 @@ impl Consumer {
                         let entry: PriceEntry = PriceEntry {
                             price: result,
                             sender: sender_id.clone(),
-                            price_type: price_type.clone(),
+                            price_type,
                         };
                         provider.set_pair(&pair_name, &entry.clone());
                     }
@@ -117,7 +123,7 @@ impl Consumer {
                         let entry: PriceEntry = PriceEntry {
                             price: result,
                             sender: sender_id.clone(),
-                            price_type: price_type.clone(),
+                            price_type,
                         };
                         provider.set_pair(&pair_name, &entry.clone());
                     }
@@ -143,8 +149,8 @@ impl Consumer {
     /// @dev Fetches a price from the FPO with the answer forwarded to `price_callback()`.
     pub fn get_price(&self, pair: String, provider: AccountId) -> Promise {
         fpo::get_price(
-            pair.clone(),
-            provider.clone(),
+            pair,
+            provider,
             self.oracle.clone(),
             NO_DEPOSIT,
             GAS_FOR_RESOLVE_TRANSFER,
@@ -159,8 +165,8 @@ impl Consumer {
     /// @dev Fetches prices from the FPO with the answer forwarded to `prices_callback()`.
     pub fn get_prices(&self, pairs: Vec<String>, providers: Vec<AccountId>) -> Promise {
         fpo::get_prices(
-            pairs.clone(),
-            providers.clone(),
+            pairs,
+            providers,
             self.oracle.clone(),
             NO_DEPOSIT,
             GAS_FOR_RESOLVE_TRANSFER,
@@ -180,9 +186,9 @@ impl Consumer {
         min_last_update: Timestamp,
     ) -> Promise {
         fpo::aggregate_avg(
-            pairs.clone(),
-            providers.clone(),
-            min_last_update.clone(),
+            pairs,
+            providers,
+            min_last_update,
             self.oracle.clone(),
             NO_DEPOSIT,
             GAS_FOR_RESOLVE_TRANSFER,
@@ -202,9 +208,9 @@ impl Consumer {
         min_last_update: Timestamp,
     ) -> Promise {
         fpo::aggregate_median(
-            pairs.clone(),
-            providers.clone(),
-            min_last_update.clone(),
+            pairs,
+            providers,
+            min_last_update,
             self.oracle.clone(),
             NO_DEPOSIT,
             GAS_FOR_RESOLVE_TRANSFER,

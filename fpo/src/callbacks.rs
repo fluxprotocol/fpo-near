@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use crate::*;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::Timestamp;
@@ -85,7 +87,7 @@ impl FPOContract {
         receiver_id: AccountId,
     ) -> Promise {
         let sender_id = env::predecessor_account_id();
-        let avg = self.aggregate_avg(pairs.clone(), providers.clone(), min_last_update);
+        let avg = self.aggregate_avg(&pairs, providers.clone(), min_last_update);
         ext_price_consumer::on_price_received(
             sender_id,
             pairs,

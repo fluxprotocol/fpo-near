@@ -12,3 +12,4 @@ lto = true
 debug = false
 panic = "abort"
 overflow-checks = true
+strip = true
