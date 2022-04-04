@@ -163,7 +163,7 @@ mod tests {
             vec![U128(2500), U128(42000)],
             fpo_contract
                 .get_prices(
-                    &["ETH/USD", "BTC/USD"],
+                    &["ETH/USD".to_string(), "BTC/USD".to_string()],
                     &[env::predecessor_account_id(), env::predecessor_account_id()]
                 )
                 .into_iter()
