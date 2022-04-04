@@ -95,15 +95,15 @@ impl Consumer {
     pub fn on_price_received(
         &mut self,
         sender_id: AccountId,
-        pairs: Vec<String>,
-        providers: Vec<AccountId>,
+        pairs: &[String],
+        providers: &[AccountId],
         price_type: PriceType,
         results: Vec<Option<U128>>,
     ) {
-        for (index, provider) in providers.iter().enumerate() {
+        for ((provider, pair), result) in providers.iter().zip(pairs.iter()).zip(results.iter()) {
             let provider_account_id = provider.clone();
             let mut provider = self.providers.get(provider).unwrap_or_else(Provider::new);
-            let pair_name = format!("{}-{}", pairs[index], provider_account_id);
+            let pair_name = format!("{}-{}", pair, provider_account_id);
 
             if price_type == PriceType::Mean || price_type == PriceType::Median {
                 match results[0] {
@@ -118,14 +118,14 @@ impl Consumer {
                     None => log!("Not found"),
                 }
             } else {
-                match results[index] {
+                match result {
                     Some(result) => {
                         let entry: PriceEntry = PriceEntry {
-                            price: result,
+                            price: *result,
                             sender: sender_id.clone(),
                             price_type,
                         };
-                        provider.set_pair(&pair_name, &entry.clone());
+                        provider.set_pair(&pair_name, &entry);
                     }
                     None => log!("Not found"),
                 }
@@ -136,7 +136,7 @@ impl Consumer {
     }
 
     /// @dev Gets a cached price from this contract.
-    pub fn get_pair(&self, provider: AccountId, pair: String) -> PriceEntry {
+    pub fn get_pair(&self, provider: AccountId, pair: &str) -> PriceEntry {
         let pair_name = format!("{}-{}", pair, provider);
 
         let prov = self
