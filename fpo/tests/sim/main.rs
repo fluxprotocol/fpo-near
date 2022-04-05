@@ -45,7 +45,10 @@ fn simulate_create_pair() {
         "Returned Price: {:?}",
         &price_entry.unwrap_json_value()["price"]
     );
-    debug_assert_eq!(&price_entry.unwrap_json_value()["price"].to_owned(), "2000");
+    debug_assert_eq!(
+        &price_entry.unwrap_json_value()["price"].to_owned(),
+        &"2000".to_string()
+    );
 }
 
 #[test]
@@ -96,7 +99,10 @@ fn simulate_push_data() {
         "Returned Price: {:?}",
         &price_entry.unwrap_json_value()["price"]
     );
-    debug_assert_eq!(&price_entry.unwrap_json_value()["price"].to_owned(), "4000");
+    debug_assert_eq!(
+        &price_entry.unwrap_json_value()["price"].to_owned(),
+        &"4000".to_string()
+    );
 }
 
 #[test]
@@ -127,7 +133,10 @@ fn simulate_different_providers() {
         "Returned Price: {:?}",
         &price_entry.unwrap_json_value()["price"].to_owned()
     );
-    debug_assert_eq!(&price_entry.unwrap_json_value()["price"].to_owned(), "4000");
+    debug_assert_eq!(
+        &price_entry.unwrap_json_value()["price"].to_owned(),
+        &"4000".to_string()
+    );
 
     // output and check root's data
     let price_entry = call!(
@@ -138,7 +147,10 @@ fn simulate_different_providers() {
         "Returned Price: {:?}",
         &price_entry.unwrap_json_value()["price"].to_owned()
     );
-    debug_assert_eq!(&price_entry.unwrap_json_value()["price"].to_owned(), "2000");
+    debug_assert_eq!(
+        &price_entry.unwrap_json_value()["price"].to_owned(),
+        &"2000".to_string()
+    );
 }
 
 #[test]
@@ -176,7 +188,10 @@ fn simulate_different_pairs() {
         "Returned Price: {:?}",
         &price_entry.unwrap_json_value()["price"].to_owned()
     );
-    debug_assert_eq!(&price_entry.unwrap_json_value()["price"].to_owned(), "4000");
+    debug_assert_eq!(
+        &price_entry.unwrap_json_value()["price"].to_owned(),
+        &"4000".to_string()
+    );
 
     // output and check bob's data
     let price_entry = call!(
@@ -189,7 +204,7 @@ fn simulate_different_pairs() {
     );
     debug_assert_eq!(
         &price_entry.unwrap_json_value()["price"].to_owned(),
-        "45000"
+        &"45000".to_string()
     );
 }
 
@@ -236,7 +251,7 @@ fn simulate_agg_avg() {
 
     // output and check the data
     println!("Returned AVG: {:?}", &avg.unwrap_json_value());
-    debug_assert_eq!(&avg.unwrap_json_value(), "2500");
+    debug_assert_eq!(&avg.unwrap_json_value(), &"2500".to_string());
 }
 
 #[test]
@@ -282,7 +297,7 @@ fn simulate_agg_median() {
 
     // output and check the data
     println!("Returned MEDIAN: {:?}", &median.unwrap_json_value());
-    debug_assert_eq!(&median.unwrap_json_value(), "3000");
+    debug_assert_eq!(&median.unwrap_json_value(), &"3000".to_string());
 }
 
 #[test]
@@ -328,5 +343,5 @@ fn simulate_agg_median_diff_ids() {
 
     // output and check the data
     println!("Returned MEDIAN: {:?}", &median.unwrap_json_value());
-    debug_assert_eq!(&median.unwrap_json_value(), "3000");
+    debug_assert_eq!(&median.unwrap_json_value(), &"3000".to_string());
 }

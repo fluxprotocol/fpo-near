@@ -40,7 +40,8 @@ pub struct PriceEntry {
     price_type: PriceType,
 }
 
-#[derive(Debug, BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize)]
+
 pub struct Provider {
     pub pairs: LookupMap<String, PriceEntry>, // Maps "{TICKER_1}/{TICKER_2}-{PROVIDER}" => PriceEntry - e.g.: ETH/USD => PriceEntry
 }
@@ -52,7 +53,7 @@ impl Provider {
         }
     }
     pub fn set_pair(&mut self, pair: String, price: &PriceEntry) {
-        self.pairs.insert(&pair.to_string(), price);
+        self.pairs.insert(&pair, price);
     }
 }
 
@@ -63,7 +64,7 @@ impl Default for Provider {
 }
 
 #[near_bindgen]
-#[derive(Debug, BorshDeserialize, BorshSerialize, PanicOnDefault)]
+#[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Consumer {
     oracle: AccountId,
     providers: LookupMap<AccountId, Provider>, // maps:  AccountId => Provider
@@ -99,10 +100,13 @@ impl Consumer {
         price_type: PriceType,
         results: Vec<Option<U128>>,
     ) {
-        for ((provider, pair), result) in providers.iter().zip(pairs.iter()).zip(results.iter()) {
-            let provider_account_id = provider.clone();
-            let mut provider = self.providers.get(provider).unwrap_or_else(Provider::new);
-            let pair_name = format!("{}-{}", pair, provider_account_id);
+        for index in 0..providers.len() {
+            let provider_account_id = &providers[index];
+            let mut provider = self
+                .providers
+                .get(provider_account_id)
+                .unwrap_or_else(Provider::new);
+            let pair_name = format!("{}-{}", pairs[index], provider_account_id);
 
             if price_type == PriceType::Mean || price_type == PriceType::Median {
                 match results[0] {
@@ -117,27 +121,27 @@ impl Consumer {
                     None => log!("Not found"),
                 }
             } else {
-                match result {
+                match results[index] {
                     Some(result) => {
                         let entry: PriceEntry = PriceEntry {
-                            price: *result,
+                            price: result,
                             sender: sender_id.clone(),
                             price_type,
                         };
-                        provider.set_pair(pair_name, &entry);
+                        provider.set_pair(pair_name, &entry.clone());
                     }
                     None => log!("Not found"),
                 }
             }
 
-            self.providers.insert(&provider_account_id, &provider);
+            self.providers.insert(provider_account_id, &provider);
         }
     }
 
     /// @dev Gets a cached price from this contract.
     pub fn get_pair(&self, provider: AccountId, pair: String) -> PriceEntry {
         let pair_name = format!("{}-{}", pair, provider);
-        
+
         let prov = self
             .providers
             .get(&provider)
