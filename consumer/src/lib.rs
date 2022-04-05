@@ -40,8 +40,7 @@ pub struct PriceEntry {
     price_type: PriceType,
 }
 
-#[derive(BorshDeserialize, BorshSerialize)]
-
+#[derive(Debug, BorshDeserialize, BorshSerialize)]
 pub struct Provider {
     pub pairs: LookupMap<String, PriceEntry>, // Maps "{TICKER_1}/{TICKER_2}-{PROVIDER}" => PriceEntry - e.g.: ETH/USD => PriceEntry
 }
@@ -64,7 +63,7 @@ impl Default for Provider {
 }
 
 #[near_bindgen]
-#[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
+#[derive(Debug, BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Consumer {
     oracle: AccountId,
     providers: LookupMap<AccountId, Provider>, // maps:  AccountId => Provider
@@ -138,7 +137,7 @@ impl Consumer {
     /// @dev Gets a cached price from this contract.
     pub fn get_pair(&self, provider: AccountId, pair: String) -> PriceEntry {
         let pair_name = format!("{}-{}", pair, provider);
-
+        
         let prov = self
             .providers
             .get(&provider)

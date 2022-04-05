@@ -336,13 +336,13 @@ fn simulate_get_prices_call() {
     debug_assert_eq!(&price_entry.unwrap_json_value()["price"].to_owned(), "2000");
 
     // create a price pair, check if it exists, and get the value
-    call!(provider2, fpo.create_pair("BTC/USD", 8, U128(45000))).assert_success();
+    call!(provider2, fpo.create_pair("BTC/USD".to_string(), 8, U128(45000))).assert_success();
     call!(
         provider2,
-        fpo.pair_exists("BTC/USD", provider2.account_id())
+        fpo.pair_exists("BTC/USD".to_string(), provider2.account_id())
     )
     .assert_success();
-    let price_entry = call!(provider2, fpo.get_entry("BTC/USD", provider2.account_id()));
+    let price_entry = call!(provider2, fpo.get_entry("BTC/USD".to_string(), provider2.account_id()));
 
     debug_assert_eq!(
         &price_entry.unwrap_json_value()["price"].to_owned(),
@@ -371,7 +371,7 @@ fn simulate_get_prices_call() {
         None => println!("Retrieved Nothing"),
     }
 
-    let fetched_entry = call!(user, consumer.get_pair(provider2.account_id(), "BTC/USD"));
+    let fetched_entry = call!(user, consumer.get_pair(provider2.account_id(), "BTC/USD".to_string()));
 
     match &fetched_entry.promise_results()[1] {
         Some(res) => {
@@ -494,15 +494,15 @@ fn simulate_aggregate_avg_call() {
     debug_assert_eq!(&price_entry.unwrap_json_value()["price"].to_owned(), "2000");
 
     // create a price pair, check if it exists, and get the value
-    call!(provider2, fpo.create_pair("ETH / USD", 8, U128(4000))).assert_success();
+    call!(provider2, fpo.create_pair("ETH / USD".to_string(), 8, U128(4000))).assert_success();
     call!(
         provider2,
-        fpo.pair_exists("ETH / USD", provider2.account_id())
+        fpo.pair_exists("ETH / USD".to_string(), provider2.account_id())
     )
     .assert_success();
     let price_entry = call!(
         provider2,
-        fpo.get_entry("ETH / USD", provider2.account_id())
+        fpo.get_entry("ETH / USD".to_string(), provider2.account_id())
     );
 
     debug_assert_eq!(&price_entry.unwrap_json_value()["price"].to_owned(), "4000");
@@ -529,7 +529,7 @@ fn simulate_aggregate_avg_call() {
         None => println!("Retrieved Nothing"),
     }
 
-    let fetched_entry = call!(user, consumer.get_pair(provider2.account_id(), "ETH / USD"));
+    let fetched_entry = call!(user, consumer.get_pair(provider2.account_id(), "ETH / USD".to_string()));
 
     match &fetched_entry.promise_results()[1] {
         Some(res) => {
@@ -570,15 +570,15 @@ fn simulate_aggregate_median_call() {
     debug_assert_eq!(&price_entry.unwrap_json_value()["price"].to_owned(), "2000");
 
     // create a price pair, check if it exists, and get the value
-    call!(provider2, fpo.create_pair("ETH / USD", 8, U128(4000))).assert_success();
+    call!(provider2, fpo.create_pair("ETH / USD".to_string(), 8, U128(4000))).assert_success();
     call!(
         provider2,
-        fpo.pair_exists("ETH / USD", provider2.account_id())
+        fpo.pair_exists("ETH / USD".to_string(), provider2.account_id())
     )
     .assert_success();
     let price_entry = call!(
         provider2,
-        fpo.get_entry("ETH / USD", provider2.account_id())
+        fpo.get_entry("ETH / USD".to_string(), provider2.account_id())
     );
 
     debug_assert_eq!(&price_entry.unwrap_json_value()["price"].to_owned(), "4000");
