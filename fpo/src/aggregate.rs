@@ -25,7 +25,7 @@ impl FPOContract {
             .zip(pairs.iter())
             .fold(0, |s, (account_id, pair)| {
                 let provider = self.get_provider_expect(account_id);
-                let pair_name = format!("{}-{}", pair, account_id);
+                let pair_name = format!("{}:{}", pair, account_id);
                 let entry = provider.get_entry_expect(&pair_name);
 
                 // If this entry was updated after the min_last_update take it out of the average
@@ -64,7 +64,7 @@ impl FPOContract {
             vec![],
             |mut arr: Vec<u128>, (account_id, pair)| {
                 let provider = self.get_provider_expect(account_id);
-                let pair_name = format!("{}-{}", pair, account_id);
+                let pair_name = format!("{}:{}", pair, account_id);
                 let entry = provider.get_entry_expect(&pair_name);
 
                 // If this entry was updated after the min_last_update take it out of the average
@@ -106,7 +106,7 @@ impl FPOContract {
                     .providers
                     .get(account_id)
                     .expect("no provider with account id");
-                let pair_name = format!("{}-{}", pair, account_id);
+                let pair_name = format!("{}:{}", pair, account_id);
                 let entry = provider.get_entry_expect(&pair_name);
 
                 // If this entry was updated after the min_last_update take it out of the average

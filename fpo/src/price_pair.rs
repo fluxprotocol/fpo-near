@@ -22,7 +22,7 @@ impl FPOContract {
             .get(&env::predecessor_account_id())
             .unwrap_or_else(Provider::new);
 
-        let pair_name = format!("{}-{}", pair, env::predecessor_account_id());
+        let pair_name = format!("{}:{}", pair, env::predecessor_account_id());
         assert!(
             provider.pairs.get(&pair_name).is_none(),
             "pair already exists"
@@ -44,7 +44,7 @@ impl FPOContract {
     #[payable]
     pub fn push_data(&mut self, pair: String, price: U128) {
         let mut provider = self.get_provider_expect(&env::predecessor_account_id());
-        let pair_name = format!("{}-{}", pair, env::predecessor_account_id());
+        let pair_name = format!("{}:{}", pair, env::predecessor_account_id());
         provider.set_price(pair_name, price, env::block_timestamp());
         self.providers
             .insert(&env::predecessor_account_id(), &provider);
@@ -52,7 +52,7 @@ impl FPOContract {
 
     /// Returns all data associated with a price pair by a provider
     pub fn get_entry(&self, pair: String, provider: AccountId) -> Option<PriceEntry> {
-        let pair_name = format!("{}-{}", pair, provider);
+        let pair_name = format!("{}:{}", pair, provider);
         let provider = self.get_provider_option(&provider);
         match provider {
             Some(provider) => provider.get_entry_option(&pair_name),
@@ -62,7 +62,7 @@ impl FPOContract {
 
     /// Returns only the price of a price pair by a provider
     pub fn get_price(&self, pair: String, provider: &AccountId) -> Option<U128> {
-        let pair_name = format!("{}-{}", pair, provider);
+        let pair_name = format!("{}:{}", pair, provider);
         let provider = self.get_provider_option(provider);
         match provider {
             Some(provider) => provider
@@ -82,7 +82,7 @@ impl FPOContract {
 
         let mut result = vec![];
         for (i, provider) in providers.iter().enumerate() {
-            let pair_name = format!("{}-{}", pairs[i], provider);
+            let pair_name = format!("{}:{}", pairs[i], provider);
             result.push(
                 self.get_provider_expect(provider)
                     .get_entry_option(&pair_name)
@@ -94,7 +94,7 @@ impl FPOContract {
 
     /// Checks if a given price pair exists
     pub fn pair_exists(&self, pair: String, provider: AccountId) -> bool {
-        let pair_name = format!("{}-{}", pair, provider);
+        let pair_name = format!("{}:{}", pair, provider);
         self.get_provider_expect(&provider)
             .pairs
             .get(&pair_name)
