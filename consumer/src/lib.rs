@@ -106,7 +106,7 @@ impl Consumer {
                 .providers
                 .get(provider_account_id)
                 .unwrap_or_else(Provider::new);
-            let pair_name = format!("{}-{}", pairs[index], provider_account_id);
+            let pair_name = format!("{}:{}", pairs[index], provider_account_id);
 
             if price_type == PriceType::Mean || price_type == PriceType::Median {
                 match results[0] {
@@ -140,7 +140,7 @@ impl Consumer {
 
     /// @dev Gets a cached price from this contract.
     pub fn get_pair(&self, provider: AccountId, pair: String) -> PriceEntry {
-        let pair_name = format!("{}-{}", pair, provider);
+        let pair_name = format!("{}:{}", pair, provider);
 
         let prov = self
             .providers
