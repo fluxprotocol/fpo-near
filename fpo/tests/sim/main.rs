@@ -2,12 +2,14 @@ use near_fpo::FPOContractContract;
 pub use near_sdk::json_types::Base64VecU8;
 use near_sdk::json_types::U128;
 use near_sdk_sim::{call, deploy, init_simulator, to_yocto, ContractAccount, UserAccount};
+use near_sdk::serde_json::json;
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
     FPO_BYTES => "../res/near_fpo.wasm",
 }
 
 pub const DEFAULT_GAS: u64 = 300_000_000_000_000;
+pub const STORAGE_COST: u128 = 1_000_000_000_000_000_000;
 
 fn init() -> (UserAccount, ContractAccount<FPOContractContract>) {
     let root = init_simulator(None);
@@ -29,7 +31,13 @@ fn simulate_create_pair() {
     call!(root, fpo.new()).assert_success();
 
     // create a price pair, check if it exists, and get the value
-    call!(root, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))).assert_success();
+    root.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         root,
         fpo.pair_exists("ETH/USD".to_string(), root.account_id())
@@ -57,7 +65,13 @@ fn simulate_create_smae_pair() {
     call!(root, fpo.new()).assert_success();
 
     // create a price pair
-    call!(root, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))).assert_success();
+    root.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
 
     let err = call!(root, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))).promise_errors();
     println!("ERROR: {:?}", err);
@@ -70,7 +84,13 @@ fn simulate_push_data() {
     call!(root, fpo.new()).assert_success();
 
     // create a price pair, check if it exists, and get the value
-    call!(root, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))).assert_success();
+    root.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         root,
         fpo.pair_exists("ETH/USD".to_string(), root.account_id())
@@ -111,7 +131,13 @@ fn simulate_different_providers() {
     call!(root, fpo.new()).assert_success();
 
     // create a price pair from root
-    call!(root, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))).assert_success();
+    root.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         root,
         fpo.pair_exists("ETH/USD".to_string(), root.account_id())
@@ -120,7 +146,13 @@ fn simulate_different_providers() {
 
     // create a price pair from bob
     let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
-    call!(bob, fpo.create_pair("ETH/USD".to_string(), 8, U128(4000))).assert_success();
+    bob.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(4000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         bob,
         fpo.pair_exists("ETH/USD".to_string(), bob.account_id())
@@ -160,7 +192,13 @@ fn simulate_different_pairs() {
 
     // create a price pair from bob
     let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
-    call!(bob, fpo.create_pair("ETH / USD".to_string(), 8, U128(4000))).assert_success();
+    bob.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH / USD".to_string(), 8, U128(4000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         bob,
         fpo.pair_exists("ETH / USD".to_string(), bob.account_id())
@@ -168,11 +206,13 @@ fn simulate_different_pairs() {
     .assert_success();
 
     // create another price pair from bob
-    call!(
-        bob,
-        fpo.create_pair("BTC / USD".to_string(), 8, U128(45000))
-    )
-    .assert_success();
+    bob.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["BTC / USD".to_string(), 8, U128(45000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         bob,
         fpo.pair_exists("BTC / USD".to_string(), bob.account_id())
@@ -214,19 +254,43 @@ fn simulate_agg_avg() {
     call!(root, fpo.new()).assert_success();
 
     // create a price pair from root
-    call!(root, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))).assert_success();
+    root.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
 
     // create a price pair from bob
     let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
-    call!(bob, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))).assert_success();
+    bob.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
 
     // create a price pair from alice
     let alice = root.create_user("alice".parse().unwrap(), to_yocto("1000000"));
-    call!(alice, fpo.create_pair("ETH/USD".to_string(), 8, U128(3000))).assert_success();
+    alice.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(3000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
 
     // create a price pair from carol
     let carol = root.create_user("carol".parse().unwrap(), to_yocto("1000000"));
-    call!(carol, fpo.create_pair("ETH/USD".to_string(), 8, U128(3000))).assert_success();
+    carol.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(3000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
 
     // find the average of the four
     let pairs = vec![
@@ -260,19 +324,43 @@ fn simulate_agg_median() {
     call!(root, fpo.new()).assert_success();
 
     // create a price pair from root
-    call!(root, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))).assert_success();
+    root.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
 
     // create a price pair from bob
     let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
-    call!(bob, fpo.create_pair("ETH/USD".to_string(), 8, U128(4000))).assert_success();
+    bob.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(4000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
 
     // create a price pair from alice
     let alice = root.create_user("alice".parse().unwrap(), to_yocto("1000000"));
-    call!(alice, fpo.create_pair("ETH/USD".to_string(), 8, U128(4000))).assert_success();
+    alice.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(4000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
 
     // create a price pair from carol
     let carol = root.create_user("carol".parse().unwrap(), to_yocto("1000000"));
-    call!(carol, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))).assert_success();
+    carol.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
 
     // find the median of the four
     let pairs = vec![
@@ -306,19 +394,43 @@ fn simulate_agg_median_diff_ids() {
     call!(root, fpo.new()).assert_success();
 
     // create a price pair from root
-    call!(root, fpo.create_pair("ETH-USD".to_string(), 8, U128(2000))).assert_success();
+    root.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH-USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
 
     // create a price pair from bob
     let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
-    call!(bob, fpo.create_pair("ETH / USD".to_string(), 8, U128(4000))).assert_success();
+    bob.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH / USD".to_string(), 8, U128(4000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
 
     // create a price pair from alice
     let alice = root.create_user("alice".parse().unwrap(), to_yocto("1000000"));
-    call!(alice, fpo.create_pair("ETH/USD".to_string(), 8, U128(4000))).assert_success();
+    alice.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(4000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
 
     // create a price pair from carol
     let carol = root.create_user("carol".parse().unwrap(), to_yocto("1000000"));
-    call!(carol, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))).assert_success();
+    carol.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
 
     // find the median of the four
     let pairs = vec![
