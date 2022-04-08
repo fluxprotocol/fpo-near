@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use crate::*;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::Timestamp;
@@ -40,7 +42,7 @@ impl FPOContract {
         receiver_id: AccountId,
     ) -> Promise {
         let sender_id = env::predecessor_account_id();
-        let price = self.get_price(pair.clone(), provider.clone());
+        let price = self.get_price(pair.clone(), &provider);
         ext_price_consumer::on_price_received(
             sender_id,
             vec![pair],

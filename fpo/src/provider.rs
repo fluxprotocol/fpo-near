@@ -22,15 +22,15 @@ impl Provider {
     }
 
     /// Returns all data associated with a price pair
-    pub fn get_entry_expect(&self, pair: &String) -> PriceEntry {
+    pub fn get_entry_expect(&self, pair: &str) -> PriceEntry {
         self.pairs
-            .get(pair)
-            .expect(format!("no price available for {}", pair).as_str())
+            .get(&pair.to_string())
+            .unwrap_or_else(|| panic!("no price available for {}", pair))
     }
 
     /// Returns all data associated with a price pair, returning None if no price is available
-    pub fn get_entry_option(&self, pair: &String) -> Option<PriceEntry> {
-        self.pairs.get(pair)
+    pub fn get_entry_option(&self, pair: &str) -> Option<PriceEntry> {
+        self.pairs.get(&pair.to_string())
     }
 
     /// Sets the fee for querying prices (not yet implemented)
@@ -45,6 +45,12 @@ impl Provider {
         entry.price = price;
 
         self.pairs.insert(&pair, &entry);
+    }
+}
+
+impl Default for Provider {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

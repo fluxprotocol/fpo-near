@@ -17,22 +17,25 @@ impl FPOContract {
             "pairs and provider should be of equal length"
         );
 
-        let min_last_update: u64 = min_last_update.into();
+        let min_last_update: u64 = min_last_update;
         let mut amount_of_providers = providers.len();
 
-        let cumulative = providers.iter().enumerate().fold(0, |s, (i, account_id)| {
-            let provider = self.get_provider_expect(&account_id);
-            let pair_name = format!("{}-{}", pairs[i], account_id);
-            let entry = provider.get_entry_expect(&pair_name);
+        let cumulative = providers
+            .iter()
+            .zip(pairs.iter())
+            .fold(0, |s, (account_id, pair)| {
+                let provider = self.get_provider_expect(account_id);
+                let pair_name = format!("{}-{}", pair, account_id);
+                let entry = provider.get_entry_expect(&pair_name);
 
-            // If this entry was updated after the min_last_update take it out of the average
-            if u64::from(entry.last_update) < min_last_update {
-                amount_of_providers -= 1;
-                s
-            } else {
-                s + u128::from(entry.price)
-            }
-        });
+                // If this entry was updated after the min_last_update take it out of the average
+                if entry.last_update < min_last_update {
+                    amount_of_providers -= 1;
+                    s
+                } else {
+                    s + u128::from(entry.price)
+                }
+            });
 
         if amount_of_providers as u128 == 0 {
             return None;
@@ -54,29 +57,28 @@ impl FPOContract {
             "pairs and provider should be of equal length"
         );
 
-        let min_last_update: u64 = min_last_update.into();
+        let min_last_update: u64 = min_last_update;
         let mut amount_of_providers = providers.len();
 
-        let mut cumulative =
-            providers
-                .iter()
-                .enumerate()
-                .fold(vec![], |mut arr: Vec<u128>, (i, account_id)| {
-                    let provider = self.get_provider_expect(&account_id);
-                    let pair_name = format!("{}-{}", pairs[i], account_id);
-                    let entry = provider.get_entry_expect(&pair_name);
+        let mut cumulative = providers.iter().zip(pairs.iter()).fold(
+            vec![],
+            |mut arr: Vec<u128>, (account_id, pair)| {
+                let provider = self.get_provider_expect(account_id);
+                let pair_name = format!("{}-{}", pair, account_id);
+                let entry = provider.get_entry_expect(&pair_name);
 
-                    // If this entry was updated after the min_last_update take it out of the average
-                    if u64::from(entry.last_update) < min_last_update {
-                        amount_of_providers -= 1;
-                        return arr;
-                    } else {
-                        arr.push(u128::from(entry.price));
-                        return arr;
-                    }
-                });
+                // If this entry was updated after the min_last_update take it out of the average
+                if entry.last_update < min_last_update {
+                    amount_of_providers -= 1;
+                    arr
+                } else {
+                    arr.push(u128::from(entry.price));
+                    arr
+                }
+            },
+        );
 
-        if cumulative.len() == 0 {
+        if cumulative.is_empty() {
             return None;
         }
 
@@ -95,20 +97,20 @@ impl FPOContract {
             providers.len(),
             "pairs and provider should be of equal length"
         );
-        let min_last_update: u64 = min_last_update.into();
+        let min_last_update: u64 = min_last_update;
         providers // Was pairs??
             .iter()
-            .enumerate()
-            .map(|(i, account_id)| {
+            .zip(pairs.iter())
+            .map(|(account_id, pair)| {
                 let provider = self
                     .providers
                     .get(account_id)
                     .expect("no provider with account id");
-                let pair_name = format!("{}-{}", pairs[i], account_id);
+                let pair_name = format!("{}-{}", pair, account_id);
                 let entry = provider.get_entry_expect(&pair_name);
 
                 // If this entry was updated after the min_last_update take it out of the average
-                if u64::from(entry.last_update) < min_last_update {
+                if entry.last_update < min_last_update {
                     None
                 } else {
                     Some(entry.price)
