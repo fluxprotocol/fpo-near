@@ -4,6 +4,9 @@ use near_sdk::{
     Timestamp,
 };
 
+// the cost of storing u128 in storage by provider
+pub const STORAGE_COST: u128 = 1_000_000_000_000_000_000;
+
 #[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Debug)]
 pub struct PriceEntry {
     pub price: U128,            // Last reported price
@@ -17,6 +20,13 @@ impl FPOContract {
     /// Creates a new price pair by a provider
     #[payable]
     pub fn create_pair(&mut self, pair: String, decimals: u16, initial_price: U128) {
+        
+        // check for storage deposit
+        assert!(
+            STORAGE_COST <= env::attached_deposit(),
+            "Insufficient storage, need {}", STORAGE_COST
+        );
+        
         let mut provider = self
             .providers
             .get(&env::predecessor_account_id())
@@ -126,7 +136,8 @@ mod tests {
         builder
             .current_account_id(current_account_id.clone())
             .signer_account_id("robert.testnet".parse().unwrap())
-            .predecessor_account_id(predecessor_account_id.clone());
+            .predecessor_account_id(predecessor_account_id.clone())
+            .attached_deposit(STORAGE_COST);
         builder
     }
 

@@ -11,6 +11,7 @@ near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
 }
 
 pub const DEFAULT_GAS: u64 = 300_000_000_000_000;
+pub const STORAGE_COST: u128 = 1_000_000_000_000_000_000;
 
 fn init() -> (
     UserAccount,
@@ -45,11 +46,13 @@ fn simulate_get_price() {
     call!(provider1, fpo.new()).assert_success();
 
     // create a price pair, check if it exists, and get the value
-    call!(
-        provider1,
-        fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))
-    )
-    .assert_success();
+    provider1.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         provider1,
         fpo.pair_exists("ETH/USD".to_string(), provider1.account_id())
@@ -90,11 +93,13 @@ fn simulate_get_prices() {
     call!(root, consumer.new(fpo.account_id())).assert_success();
 
     // create a price pair, check if it exists, and get the value
-    call!(
-        provider1,
-        fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))
-    )
-    .assert_success();
+    provider1.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         provider1,
         fpo.pair_exists("ETH/USD".to_string(), provider1.account_id())
@@ -110,11 +115,13 @@ fn simulate_get_prices() {
         &"2000".to_string()
     );
 
-    call!(
-        provider2,
-        fpo.create_pair("ETH/USD".to_string(), 8, U128(4000))
-    )
-    .assert_success();
+    provider2.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(4000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         provider2,
         fpo.pair_exists("ETH/USD".to_string(), provider2.account_id())
@@ -155,11 +162,13 @@ fn simulate_agg_avg() {
     call!(root, consumer.new(fpo.account_id())).assert_success();
 
     // create a price pair, check if it exists, and get the value
-    call!(
-        provider1,
-        fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))
-    )
-    .assert_success();
+    provider1.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         provider1,
         fpo.pair_exists("ETH/USD".to_string(), provider1.account_id())
@@ -175,11 +184,13 @@ fn simulate_agg_avg() {
         &"2000".to_string()
     );
 
-    call!(
-        provider2,
-        fpo.create_pair("ETH/USD".to_string(), 8, U128(4000))
-    )
-    .assert_success();
+    provider2.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(4000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         provider2,
         fpo.pair_exists("ETH/USD".to_string(), provider2.account_id())
@@ -221,11 +232,13 @@ fn simulate_agg_median() {
     call!(root, consumer.new(fpo.account_id())).assert_success();
 
     // create a price pair, check if it exists, and get the value
-    call!(
-        provider1,
-        fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))
-    )
-    .assert_success();
+    provider1.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         provider1,
         fpo.pair_exists("ETH/USD".to_string(), provider1.account_id())
@@ -241,11 +254,13 @@ fn simulate_agg_median() {
         &"2000".to_string()
     );
 
-    call!(
-        provider2,
-        fpo.create_pair("ETH/USD".to_string(), 8, U128(4000))
-    )
-    .assert_success();
+    provider2.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(4000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         provider2,
         fpo.pair_exists("ETH/USD".to_string(), provider2.account_id())
@@ -287,11 +302,13 @@ fn simulate_get_price_call() {
     call!(root, consumer.new(fpo.account_id())).assert_success();
 
     // create a price pair, check if it exists, and get the value
-    call!(
-        provider1,
-        fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))
-    )
-    .assert_success();
+    provider1.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         provider1,
         fpo.pair_exists("ETH/USD".to_string(), provider1.account_id())
@@ -342,11 +359,13 @@ fn simulate_get_prices_call() {
     call!(root, consumer.new(fpo.account_id())).assert_success();
 
     // create a price pair, check if it exists, and get the value
-    call!(
-        provider1,
-        fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))
-    )
-    .assert_success();
+    provider1.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         provider1,
         fpo.pair_exists("ETH/USD".to_string(), provider1.account_id())
@@ -363,11 +382,13 @@ fn simulate_get_prices_call() {
     );
 
     // create a price pair, check if it exists, and get the value
-    call!(
-        provider2,
-        fpo.create_pair("BTC/USD".to_string(), 8, U128(45000))
-    )
-    .assert_success();
+    provider2.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["BTC/USD".to_string(), 8, U128(45000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         provider2,
         fpo.pair_exists("BTC/USD".to_string(), provider2.account_id())
@@ -431,11 +452,13 @@ fn simulate_get_prices_call2() {
     call!(root, consumer.new(fpo.account_id())).assert_success();
 
     // create a price pair, check if it exists, and get the value
-    call!(
-        provider1,
-        fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))
-    )
-    .assert_success();
+    provider1.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         provider1,
         fpo.pair_exists("ETH/USD".to_string(), provider1.account_id())
@@ -452,11 +475,13 @@ fn simulate_get_prices_call2() {
     );
 
     // create a price pair, check if it exists, and get the value
-    call!(
-        provider2,
-        fpo.create_pair("ETH/USD".to_string(), 8, U128(4000))
-    )
-    .assert_success();
+    provider2.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(4000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         provider2,
         fpo.pair_exists("ETH/USD".to_string(), provider2.account_id())
@@ -519,11 +544,13 @@ fn simulate_aggregate_avg_call() {
     call!(root, consumer.new(fpo.account_id())).assert_success();
 
     // create a price pair, check if it exists, and get the value
-    call!(
-        provider1,
-        fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))
-    )
-    .assert_success();
+    provider1.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         provider1,
         fpo.pair_exists("ETH/USD".to_string(), provider1.account_id())
@@ -540,11 +567,13 @@ fn simulate_aggregate_avg_call() {
     );
 
     // create a price pair, check if it exists, and get the value
-    call!(
-        provider2,
-        fpo.create_pair("ETH / USD".to_string(), 8, U128(4000))
-    )
-    .assert_success();
+    provider2.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH / USD".to_string(), 8, U128(4000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         provider2,
         fpo.pair_exists("ETH / USD".to_string(), provider2.account_id())
@@ -608,11 +637,13 @@ fn simulate_aggregate_median_call() {
     call!(root, consumer.new(fpo.account_id())).assert_success();
 
     // create a price pair, check if it exists, and get the value
-    call!(
-        provider1,
-        fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))
-    )
-    .assert_success();
+    provider1.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         provider1,
         fpo.pair_exists("ETH/USD".to_string(), provider1.account_id())
@@ -629,11 +660,13 @@ fn simulate_aggregate_median_call() {
     );
 
     // create a price pair, check if it exists, and get the value
-    call!(
-        provider2,
-        fpo.create_pair("ETH / USD".to_string(), 8, U128(4000))
-    )
-    .assert_success();
+    provider2.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH / USD".to_string(), 8, U128(4000)]).to_string().into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST // attached deposit
+    );
     call!(
         provider2,
         fpo.pair_exists("ETH / USD".to_string(), provider2.account_id())

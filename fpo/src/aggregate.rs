@@ -126,6 +126,7 @@ mod tests {
 
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::testing_env;
+    use price_pair::STORAGE_COST;
 
     use super::*;
 
@@ -150,7 +151,8 @@ mod tests {
         builder
             .current_account_id(current_account_id.clone())
             .signer_account_id("robert.testnet".parse().unwrap())
-            .predecessor_account_id(predecessor_account_id.clone());
+            .predecessor_account_id(predecessor_account_id.clone())
+            .attached_deposit(STORAGE_COST);
         builder
     }
 
