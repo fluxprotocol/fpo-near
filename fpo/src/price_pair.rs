@@ -5,6 +5,7 @@ use near_sdk::{
 };
 
 // maximum cost of storing a new entry in create_pair() - 170 * yocto per byte (1e19 as of 2022-04-14)
+#[allow(dead_code)]
 pub const STORAGE_COST: u128 = 1_700_000_000_000_000_000_000;
 
 #[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Debug)]
@@ -20,15 +21,7 @@ impl FPOContract {
     /// Creates a new price pair by a provider
     #[payable]
     pub fn create_pair(&mut self, pair: String, decimals: u16, initial_price: U128) {
-        // check for storage deposit
-        assert!(
-            STORAGE_COST <= env::attached_deposit(),
-            "Insufficient storage, need {}",
-            STORAGE_COST
-        );
-
-        // limit length of pair name
-        assert!(pair.len() <= 12, "pair name too long");
+        let initial_storage_usage = env::storage_usage();
 
         let mut provider = self
             .providers
@@ -51,6 +44,15 @@ impl FPOContract {
 
         self.providers
             .insert(&env::predecessor_account_id(), &provider);
+
+        // check for storage deposit
+        let storage_cost =
+            env::storage_byte_cost() * u128::from(env::storage_usage() - initial_storage_usage);
+        assert!(
+            storage_cost <= env::attached_deposit(),
+            "Insufficient storage, need {}",
+            storage_cost
+        );
     }
 
     /// Sets the price for a given price pair by a provider
