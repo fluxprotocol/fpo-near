@@ -49,9 +49,11 @@ fn simulate_get_price() {
     provider1.call(
         fpo.account_id(),
         "create_pair",
-        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        &json!(["ETH/USD".to_string(), 8, U128(2000)])
+            .to_string()
+            .into_bytes(),
         DEFAULT_GAS,
-        STORAGE_COST // attached deposit
+        STORAGE_COST, // attached deposit
     );
     call!(
         provider1,
@@ -96,9 +98,11 @@ fn simulate_get_prices() {
     provider1.call(
         fpo.account_id(),
         "create_pair",
-        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        &json!(["ETH/USD".to_string(), 8, U128(2000)])
+            .to_string()
+            .into_bytes(),
         DEFAULT_GAS,
-        STORAGE_COST // attached deposit
+        STORAGE_COST, // attached deposit
     );
     call!(
         provider1,
@@ -118,9 +122,11 @@ fn simulate_get_prices() {
     provider2.call(
         fpo.account_id(),
         "create_pair",
-        &json!(["ETH/USD".to_string(), 8, U128(4000)]).to_string().into_bytes(),
+        &json!(["ETH/USD".to_string(), 8, U128(4000)])
+            .to_string()
+            .into_bytes(),
         DEFAULT_GAS,
-        STORAGE_COST // attached deposit
+        STORAGE_COST, // attached deposit
     );
     call!(
         provider2,
@@ -165,9 +171,11 @@ fn simulate_agg_avg() {
     provider1.call(
         fpo.account_id(),
         "create_pair",
-        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        &json!(["ETH/USD".to_string(), 8, U128(2000)])
+            .to_string()
+            .into_bytes(),
         DEFAULT_GAS,
-        STORAGE_COST // attached deposit
+        STORAGE_COST, // attached deposit
     );
     call!(
         provider1,
@@ -187,9 +195,11 @@ fn simulate_agg_avg() {
     provider2.call(
         fpo.account_id(),
         "create_pair",
-        &json!(["ETH/USD".to_string(), 8, U128(4000)]).to_string().into_bytes(),
+        &json!(["ETH/USD".to_string(), 8, U128(4000)])
+            .to_string()
+            .into_bytes(),
         DEFAULT_GAS,
-        STORAGE_COST // attached deposit
+        STORAGE_COST, // attached deposit
     );
     call!(
         provider2,
@@ -235,9 +245,11 @@ fn simulate_agg_median() {
     provider1.call(
         fpo.account_id(),
         "create_pair",
-        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        &json!(["ETH/USD".to_string(), 8, U128(2000)])
+            .to_string()
+            .into_bytes(),
         DEFAULT_GAS,
-        STORAGE_COST // attached deposit
+        STORAGE_COST, // attached deposit
     );
     call!(
         provider1,
@@ -257,9 +269,11 @@ fn simulate_agg_median() {
     provider2.call(
         fpo.account_id(),
         "create_pair",
-        &json!(["ETH/USD".to_string(), 8, U128(4000)]).to_string().into_bytes(),
+        &json!(["ETH/USD".to_string(), 8, U128(4000)])
+            .to_string()
+            .into_bytes(),
         DEFAULT_GAS,
-        STORAGE_COST // attached deposit
+        STORAGE_COST, // attached deposit
     );
     call!(
         provider2,
@@ -305,9 +319,11 @@ fn simulate_get_price_call() {
     provider1.call(
         fpo.account_id(),
         "create_pair",
-        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        &json!(["ETH/USD".to_string(), 8, U128(2000)])
+            .to_string()
+            .into_bytes(),
         DEFAULT_GAS,
-        STORAGE_COST // attached deposit
+        STORAGE_COST, // attached deposit
     );
     call!(
         provider1,
@@ -362,9 +378,11 @@ fn simulate_get_prices_call() {
     provider1.call(
         fpo.account_id(),
         "create_pair",
-        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        &json!(["ETH/USD".to_string(), 8, U128(2000)])
+            .to_string()
+            .into_bytes(),
         DEFAULT_GAS,
-        STORAGE_COST // attached deposit
+        STORAGE_COST, // attached deposit
     );
     call!(
         provider1,
@@ -385,9 +403,11 @@ fn simulate_get_prices_call() {
     provider2.call(
         fpo.account_id(),
         "create_pair",
-        &json!(["BTC/USD".to_string(), 8, U128(45000)]).to_string().into_bytes(),
+        &json!(["BTC/USD".to_string(), 8, U128(45000)])
+            .to_string()
+            .into_bytes(),
         DEFAULT_GAS,
-        STORAGE_COST // attached deposit
+        STORAGE_COST, // attached deposit
     );
     call!(
         provider2,
@@ -455,9 +475,11 @@ fn simulate_get_prices_call2() {
     provider1.call(
         fpo.account_id(),
         "create_pair",
-        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        &json!(["ETH/USD".to_string(), 8, U128(2000)])
+            .to_string()
+            .into_bytes(),
         DEFAULT_GAS,
-        STORAGE_COST // attached deposit
+        STORAGE_COST, // attached deposit
     );
     call!(
         provider1,
@@ -478,9 +500,11 @@ fn simulate_get_prices_call2() {
     provider2.call(
         fpo.account_id(),
         "create_pair",
-        &json!(["ETH/USD".to_string(), 8, U128(4000)]).to_string().into_bytes(),
+        &json!(["ETH/USD".to_string(), 8, U128(4000)])
+            .to_string()
+            .into_bytes(),
         DEFAULT_GAS,
-        STORAGE_COST // attached deposit
+        STORAGE_COST, // attached deposit
     );
     call!(
         provider2,
@@ -547,9 +571,11 @@ fn simulate_aggregate_avg_call() {
     provider1.call(
         fpo.account_id(),
         "create_pair",
-        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        &json!(["ETH/USD".to_string(), 8, U128(2000)])
+            .to_string()
+            .into_bytes(),
         DEFAULT_GAS,
-        STORAGE_COST // attached deposit
+        STORAGE_COST, // attached deposit
     );
     call!(
         provider1,
@@ -570,9 +596,11 @@ fn simulate_aggregate_avg_call() {
     provider2.call(
         fpo.account_id(),
         "create_pair",
-        &json!(["ETH / USD".to_string(), 8, U128(4000)]).to_string().into_bytes(),
+        &json!(["ETH / USD".to_string(), 8, U128(4000)])
+            .to_string()
+            .into_bytes(),
         DEFAULT_GAS,
-        STORAGE_COST // attached deposit
+        STORAGE_COST, // attached deposit
     );
     call!(
         provider2,
@@ -640,9 +668,11 @@ fn simulate_aggregate_median_call() {
     provider1.call(
         fpo.account_id(),
         "create_pair",
-        &json!(["ETH/USD".to_string(), 8, U128(2000)]).to_string().into_bytes(),
+        &json!(["ETH/USD".to_string(), 8, U128(2000)])
+            .to_string()
+            .into_bytes(),
         DEFAULT_GAS,
-        STORAGE_COST // attached deposit
+        STORAGE_COST, // attached deposit
     );
     call!(
         provider1,
@@ -663,9 +693,11 @@ fn simulate_aggregate_median_call() {
     provider2.call(
         fpo.account_id(),
         "create_pair",
-        &json!(["ETH / USD".to_string(), 8, U128(4000)]).to_string().into_bytes(),
+        &json!(["ETH / USD".to_string(), 8, U128(4000)])
+            .to_string()
+            .into_bytes(),
         DEFAULT_GAS,
-        STORAGE_COST // attached deposit
+        STORAGE_COST, // attached deposit
     );
     call!(
         provider2,

@@ -20,7 +20,7 @@ pub struct FPOContract {
 /// LookupMap keys
 #[derive(BorshStorageKey, BorshSerialize)]
 enum FPOStorageKeys {
-    Providers
+    Providers,
 }
 
 /// Constructor

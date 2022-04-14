@@ -20,16 +20,16 @@ impl FPOContract {
     /// Creates a new price pair by a provider
     #[payable]
     pub fn create_pair(&mut self, pair: String, decimals: u16, initial_price: U128) {
-        
         // check for storage deposit
         assert!(
             STORAGE_COST <= env::attached_deposit(),
-            "Insufficient storage, need {}", STORAGE_COST
+            "Insufficient storage, need {}",
+            STORAGE_COST
         );
 
         // limit length of pair name
         assert!(pair.len() <= 12, "pair name too long");
-        
+
         let mut provider = self
             .providers
             .get(&env::predecessor_account_id())
@@ -150,7 +150,11 @@ mod tests {
         let context = get_context(alice(), alice());
         testing_env!(context.build());
         let mut fpo_contract = FPOContract::new();
-        fpo_contract.create_pair("1234567890123".to_string(), u16::max_value(), U128(u128::max_value()));
+        fpo_contract.create_pair(
+            "1234567890123".to_string(),
+            u16::max_value(),
+            U128(u128::max_value()),
+        );
     }
 
     #[test]
@@ -160,13 +164,14 @@ mod tests {
         let mut fpo_contract = FPOContract::new();
 
         let storage_used_before = env::storage_usage();
-        fpo_contract.create_pair("123456789012".to_string(), u16::max_value(), U128(u128::max_value()));
+        fpo_contract.create_pair(
+            "123456789012".to_string(),
+            u16::max_value(),
+            U128(u128::max_value()),
+        );
 
         let storage_used_after = env::storage_usage();
-        assert_eq!(
-            storage_used_after - storage_used_before,
-            170
-        );
+        assert_eq!(storage_used_after - storage_used_before, 170);
     }
 
     #[test]
