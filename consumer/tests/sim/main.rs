@@ -11,7 +11,7 @@ near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
 }
 
 pub const DEFAULT_GAS: u64 = 300_000_000_000_000;
-pub const STORAGE_COST: u128 = 1_000_000_000_000_000_000;
+pub const STORAGE_COST: u128 = 1_700_000_000_000_000_000_000;
 
 fn init() -> (
     UserAccount,
