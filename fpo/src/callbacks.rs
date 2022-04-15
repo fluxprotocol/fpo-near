@@ -16,6 +16,8 @@ pub enum PriceType {
     Mean,
     Median,
     Collect, // same as multiple but with min_last_update
+    MeanMany,
+    MedianMany,
 }
 
 /// Price consumer trait for consumer contract
@@ -138,6 +140,64 @@ impl FPOContract {
             providers,
             PriceType::Collect,
             collect,
+            receiver_id,
+            ZERO_BALANCE,
+            GAS_TO_SEND_PRICE,
+        )
+    }
+
+    /// Forwards the result of aggregate_avg_many() to the price consumer
+    pub fn aggregate_avg_many_call(
+        &self,
+        pairs: Vec<Vec<String>>,
+        providers: Vec<Vec<AccountId>>,
+        min_last_update: Timestamp,
+        receiver_id: AccountId,
+    ) -> Promise {
+        let sender_id = env::predecessor_account_id();
+        let avgs = self.aggregate_avg_many(pairs.clone(), providers.clone(), min_last_update);
+
+        // get the first element of every subarray in `pairs`
+        let pairs = pairs
+            .iter()
+            .map(|p| p.first().unwrap().clone())
+            .collect::<Vec<String>>();
+
+        ext_price_consumer::on_price_received(
+            sender_id,
+            pairs,
+            vec![], // exclude providers
+            PriceType::MeanMany,
+            avgs,
+            receiver_id,
+            ZERO_BALANCE,
+            GAS_TO_SEND_PRICE,
+        )
+    }
+
+    /// Forwards the result of aggregate_median_many() to the price consumer
+    pub fn aggregate_median_many_call(
+        &self,
+        pairs: Vec<Vec<String>>,
+        providers: Vec<Vec<AccountId>>,
+        min_last_update: Timestamp,
+        receiver_id: AccountId,
+    ) -> Promise {
+        let sender_id = env::predecessor_account_id();
+        let medians = self.aggregate_avg_many(pairs.clone(), providers.clone(), min_last_update);
+
+        // get the first element of every subarray in `pairs` to submit as associated pair name
+        let pairs = pairs
+            .iter()
+            .map(|p| p.first().unwrap().clone())
+            .collect::<Vec<String>>();
+
+        ext_price_consumer::on_price_received(
+            sender_id,
+            pairs,
+            vec![], // exclude providers
+            PriceType::MedianMany,
+            medians,
             receiver_id,
             ZERO_BALANCE,
             GAS_TO_SEND_PRICE,

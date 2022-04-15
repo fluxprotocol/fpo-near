@@ -748,3 +748,72 @@ fn simulate_aggregate_median_call() {
         None => println!("Retrieved Nothing"),
     }
 }
+
+#[test]
+fn simulate_aggregate_median_many_call() {
+    let (root, fpo, consumer) = init();
+
+    let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
+    let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
+
+    let user = root.create_user("user".parse().unwrap(), to_yocto("1000000"));
+
+    call!(root, fpo.new()).assert_success();
+    call!(root, consumer.new(fpo.account_id())).assert_success();
+
+    // create eth/usd and btc/usd from provider1
+    provider1.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000)])
+            .to_string()
+            .into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST, // attached deposit
+    );
+    provider1.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["BTC/USD".to_string(), 8, U128(30000)])
+            .to_string()
+            .into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST, // attached deposit
+    );
+
+    // create eth/usd and btc/usd from provider2
+    provider2.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(4000)])
+            .to_string()
+            .into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST, // attached deposit
+    );
+    provider2.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["BTC/USD".to_string(), 8, U128(40000)])
+            .to_string()
+            .into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST, // attached deposit
+    );
+
+    let pairs_eth = vec!["ETH/USD".to_string(), "ETH/USD".to_string()];
+    let pairs_btc = vec!["BTC/USD".to_string(), "BTC/USD".to_string()];
+    let providers = vec![provider1.account_id(), provider2.account_id()];
+
+    call!(
+        user,
+        fpo.aggregate_median_many_call(
+            vec![pairs_eth, pairs_btc],
+            vec![providers.clone(), providers],
+            0,
+            consumer.account_id()
+        )
+    );
+
+}
+

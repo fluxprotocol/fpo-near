@@ -118,6 +118,66 @@ impl FPOContract {
             })
             .collect()
     }
+
+    /// Wrapper around `aggregate_avg` to return the average prices of multiple pairs
+    pub fn aggregate_avg_many(
+        &self,
+        pairs: Vec<Vec<String>>,
+        providers: Vec<Vec<AccountId>>,
+        min_last_update: Timestamp,
+    ) -> Vec<Option<U128>> {
+        assert_eq!(
+            pairs.len(),
+            providers.len(),
+            "pairs and provider should be of equal length"
+        );
+
+        pairs
+            .iter()
+            .zip(providers.iter())
+            .map(|(pairs, providers)| self.aggregate_avg(pairs.to_vec(), providers.to_vec(), min_last_update))
+            .collect()
+    }
+
+    /// Wrapper around `aggregate_median` to return the median prices of multiple pairs
+    pub fn aggregate_median_many(
+        &self,
+        pairs: Vec<Vec<String>>,
+        providers: Vec<Vec<AccountId>>,
+        min_last_update: Timestamp,
+    ) -> Vec<Option<U128>> {
+        assert_eq!(
+            pairs.len(),
+            providers.len(),
+            "pairs and provider should be of equal length"
+        );
+
+        pairs
+            .iter()
+            .zip(providers.iter())
+            .map(|(pairs, providers)| self.aggregate_median(pairs.to_vec(), providers.to_vec(), min_last_update))
+            .collect()
+    }
+
+    /// Wrapper around `aggregate_collect` to return the prices of multiple pairs
+    pub fn aggregate_collect_many(
+        &self,
+        pairs: Vec<Vec<String>>,
+        providers: Vec<Vec<AccountId>>,
+        min_last_update: Timestamp,
+    ) -> Vec<Vec<Option<U128>>> {
+        assert_eq!(
+            pairs.len(),
+            providers.len(),
+            "pairs and provider should be of equal length"
+        );
+
+        pairs
+            .iter()
+            .zip(providers.iter())
+            .map(|(pairs, providers)| self.aggregate_collect(pairs.to_vec(), providers.to_vec(), min_last_update))
+            .collect()
+    }
 }
 
 /// Price aggregation tests
@@ -297,4 +357,61 @@ mod tests {
             fpo_contract.aggregate_median(pairs, vec![alice(), bob(), carol(), dina()], 0)
         );
     }
+
+    #[test]
+    fn aggregate_median_many() {
+        // alice is the signer
+        let mut context = get_context(alice(), alice());
+        testing_env!(context.build());
+
+        // instantiate a contract variable
+        let mut fpo_contract = FPOContract::new();
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2000));
+        fpo_contract.create_pair("BTC/USD".to_string(), 8, U128(30000));
+        
+        // switch to bob as signer
+        context = get_context(bob(), bob());
+        testing_env!(context.build());
+        
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2000));
+        fpo_contract.create_pair("BTC/USD".to_string(), 8, U128(30000));
+        
+        // switch to carol as signer
+        context = get_context(carol(), carol());
+        testing_env!(context.build());
+        
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
+        fpo_contract.create_pair("BTC/USD".to_string(), 8, U128(40000));
+        
+        // switch to dina as signer
+        context = get_context(dina(), dina());
+        testing_env!(context.build());
+        
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
+        fpo_contract.create_pair("BTC/USD".to_string(), 8, U128(40000));
+
+        let pairs_eth = vec![
+            "ETH/USD".to_string(),
+            "ETH/USD".to_string(),
+            "ETH/USD".to_string(),
+            "ETH/USD".to_string(),
+        ];
+        let pairs_btc = vec![
+            "BTC/USD".to_string(),
+            "BTC/USD".to_string(),
+            "BTC/USD".to_string(),
+            "BTC/USD".to_string(),
+        ];
+        let providers = vec![
+            alice(),
+            bob(),
+            carol(),
+            dina(),
+        ];
+        assert_eq!(
+            vec![Some(U128(3000)), Some(U128(35000))],
+            fpo_contract.aggregate_median_many(vec![pairs_eth, pairs_btc], vec![providers.clone(), providers], 0)
+        );
+    }
+
 }
