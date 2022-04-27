@@ -1,6 +1,6 @@
 use crate::*;
-// use near_account_id::AccountId;
 use near_sdk::Timestamp;
+
 /// Public contract methods
 #[near_bindgen]
 impl FPOContract {
@@ -135,7 +135,9 @@ impl FPOContract {
         pairs
             .iter()
             .zip(providers.iter())
-            .map(|(pairs, providers)| self.aggregate_avg(pairs.to_vec(), providers.to_vec(), min_last_update))
+            .map(|(pairs, providers)| {
+                self.aggregate_avg(pairs.to_vec(), providers.to_vec(), min_last_update)
+            })
             .collect()
     }
 
@@ -155,7 +157,9 @@ impl FPOContract {
         pairs
             .iter()
             .zip(providers.iter())
-            .map(|(pairs, providers)| self.aggregate_median(pairs.to_vec(), providers.to_vec(), min_last_update))
+            .map(|(pairs, providers)| {
+                self.aggregate_median(pairs.to_vec(), providers.to_vec(), min_last_update)
+            })
             .collect()
     }
 
@@ -175,7 +179,9 @@ impl FPOContract {
         pairs
             .iter()
             .zip(providers.iter())
-            .map(|(pairs, providers)| self.aggregate_collect(pairs.to_vec(), providers.to_vec(), min_last_update))
+            .map(|(pairs, providers)| {
+                self.aggregate_collect(pairs.to_vec(), providers.to_vec(), min_last_update)
+            })
             .collect()
     }
 }
@@ -368,25 +374,25 @@ mod tests {
         let mut fpo_contract = FPOContract::new();
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2000));
         fpo_contract.create_pair("BTC/USD".to_string(), 8, U128(30000));
-        
+
         // switch to bob as signer
         context = get_context(bob(), bob());
         testing_env!(context.build());
-        
+
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2000));
         fpo_contract.create_pair("BTC/USD".to_string(), 8, U128(30000));
-        
+
         // switch to carol as signer
         context = get_context(carol(), carol());
         testing_env!(context.build());
-        
+
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
         fpo_contract.create_pair("BTC/USD".to_string(), 8, U128(40000));
-        
+
         // switch to dina as signer
         context = get_context(dina(), dina());
         testing_env!(context.build());
-        
+
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
         fpo_contract.create_pair("BTC/USD".to_string(), 8, U128(40000));
 
@@ -402,16 +408,14 @@ mod tests {
             "BTC/USD".to_string(),
             "BTC/USD".to_string(),
         ];
-        let providers = vec![
-            alice(),
-            bob(),
-            carol(),
-            dina(),
-        ];
+        let providers = vec![alice(), bob(), carol(), dina()];
         assert_eq!(
             vec![Some(U128(3000)), Some(U128(35000))],
-            fpo_contract.aggregate_median_many(vec![pairs_eth, pairs_btc], vec![providers.clone(), providers], 0)
+            fpo_contract.aggregate_median_many(
+                vec![pairs_eth, pairs_btc],
+                vec![providers.clone(), providers],
+                0
+            )
         );
     }
-
 }
