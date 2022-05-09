@@ -814,6 +814,4 @@ fn simulate_aggregate_median_many_call() {
             consumer.account_id()
         )
     );
-
 }
-

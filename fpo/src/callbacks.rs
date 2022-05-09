@@ -5,9 +5,9 @@ use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::Timestamp;
 use near_sdk::{ext_contract, log, Balance, Gas, Promise};
 use std::convert::TryInto;
-// use near_account_id::AccountId;
-const GAS_TO_SEND_PRICE: Gas = Gas(5_000_000_000_000); // Todo: calculate and optimize
-const ZERO_BALANCE: Balance = 0;
+
+pub const GAS_TO_SEND_PRICE: Gas = Gas(5_000_000_000_000); // Todo: optimize
+pub const ZERO_BALANCE: Balance = 0;
 
 #[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Debug)]
 pub enum PriceType {
@@ -30,6 +30,7 @@ pub trait PriceConsumer {
         providers: Vec<AccountId>,
         price_type: PriceType,
         results: Vec<Option<U128>>,
+        registry: Option<AccountId>,
     );
 }
 
@@ -51,6 +52,7 @@ impl FPOContract {
             vec![provider],
             PriceType::Single,
             vec![price],
+            None,
             receiver_id,
             ZERO_BALANCE,
             GAS_TO_SEND_PRICE,
@@ -74,6 +76,7 @@ impl FPOContract {
             providers,
             PriceType::Multiple,
             entries,
+            None,
             receiver_id,
             ZERO_BALANCE,
             GAS_TO_SEND_PRICE * num_pairs.try_into().unwrap(),
@@ -96,6 +99,7 @@ impl FPOContract {
             providers,
             PriceType::Mean,
             vec![avg],
+            None,
             receiver_id,
             ZERO_BALANCE,
             GAS_TO_SEND_PRICE,
@@ -118,6 +122,7 @@ impl FPOContract {
             providers,
             PriceType::Median,
             vec![median],
+            None,
             receiver_id,
             ZERO_BALANCE,
             GAS_TO_SEND_PRICE,
@@ -140,6 +145,7 @@ impl FPOContract {
             providers,
             PriceType::Collect,
             collect,
+            None,
             receiver_id,
             ZERO_BALANCE,
             GAS_TO_SEND_PRICE,
@@ -169,6 +175,7 @@ impl FPOContract {
             vec![], // exclude providers
             PriceType::MeanMany,
             avgs,
+            None,
             receiver_id,
             ZERO_BALANCE,
             GAS_TO_SEND_PRICE,
@@ -198,6 +205,7 @@ impl FPOContract {
             vec![], // exclude providers
             PriceType::MedianMany,
             medians,
+            None,
             receiver_id,
             ZERO_BALANCE,
             GAS_TO_SEND_PRICE,

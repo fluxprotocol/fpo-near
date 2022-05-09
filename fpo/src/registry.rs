@@ -1,4 +1,6 @@
 use crate::*;
+use callbacks::{ext_price_consumer, PriceType, GAS_TO_SEND_PRICE, ZERO_BALANCE};
+use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{Promise, Timestamp};
 
 #[derive(BorshDeserialize, BorshSerialize)]
@@ -6,6 +8,12 @@ pub struct Registry {
     pub pairs: Vec<Vec<String>>,
     pub providers: Vec<Vec<AccountId>>,
     pub min_last_update: Timestamp,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+pub struct RegistryResult {
+    pub registry_owner: AccountId,
+    pub result: Vec<Option<U128>>,
 }
 
 /// Private contract methods
@@ -50,36 +58,60 @@ impl FPOContract {
     }
 
     /// Calls `aggregate_median_many` using specified registry
-    pub fn registry_aggregate(&self, registry_creator: AccountId) -> Vec<Option<U128>> {
-        let registry = self.get_registry_option(&registry_creator);
+    pub fn registry_aggregate(&self, registry_owner: AccountId) -> RegistryResult {
+        let registry = self.get_registry_option(&registry_owner);
 
-        match registry {
+        let result = match registry {
             Some(registry) => self.aggregate_median_many(
                 registry.pairs,
                 registry.providers,
                 registry.min_last_update,
             ),
             None => vec![None; 0],
+        };
+
+        RegistryResult {
+            registry_owner,
+            result,
         }
     }
 
-    /// Calls `aggregate_median_many_call` using specified registry
+    /// Aggregates median of multiple price feeds using specified registry
     pub fn registry_aggregate_call(
         &self,
-        registry_creator: AccountId,
+        registry_owner: AccountId,
         receiver_id: AccountId,
     ) -> Promise {
         let registry = self
-            .get_registry_option(&registry_creator)
+            .get_registry_option(&registry_owner)
             .unwrap_or_else(|| {
-                panic!("Registry not found for {}", registry_creator);
+                panic!("Registry not found for {}", registry_owner);
             });
 
-        self.aggregate_median_many_call(
-            registry.pairs,
-            registry.providers,
+        let sender_id = env::predecessor_account_id();
+        let medians = self.aggregate_avg_many(
+            registry.pairs.clone(),
+            registry.providers.clone(),
             registry.min_last_update,
+        );
+
+        // get the first element of every subarray in `pairs` to submit as associated pair name
+        let pairs = registry
+            .pairs
+            .iter()
+            .map(|p| p.first().unwrap().clone())
+            .collect::<Vec<String>>();
+
+        ext_price_consumer::on_price_received(
+            sender_id,
+            pairs,
+            vec![], // exclude providers
+            PriceType::MedianMany,
+            medians,
+            Some(registry_owner),
             receiver_id,
+            ZERO_BALANCE,
+            GAS_TO_SEND_PRICE,
         )
     }
 }
@@ -148,7 +180,7 @@ mod tests {
 
         assert_eq!(
             vec![Some(U128(2750)), Some(U128(35000))],
-            fpo_contract.registry_aggregate(bob())
+            fpo_contract.registry_aggregate(bob()).result
         );
     }
 }
