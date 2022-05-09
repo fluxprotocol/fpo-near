@@ -89,7 +89,12 @@ impl FPOContract {
             });
 
         let sender_id = env::predecessor_account_id();
-        let medians = self.aggregate_avg_many(
+        // let medians = self.aggregate_avg_many(
+        //     registry.pairs.clone(),
+        //     registry.providers.clone(),
+        //     registry.min_last_update,
+        // );
+        let medians = self.aggregate_median_many(
             registry.pairs.clone(),
             registry.providers.clone(),
             registry.min_last_update,
