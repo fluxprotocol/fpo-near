@@ -899,6 +899,16 @@ fn simulate_registry_aggregate_call() {
 
     println!("1111111111111111111111111111111111");
 
+
+    // let tx = call!(
+    //     user,
+    //     fpo.get_price_call(
+    //         "ETH/USD".to_string(),
+    //         provider1.account_id(),
+    //         consumer.account_id()
+    //     )
+    // );
+
     let tx = call!(
         user,
         fpo.registry_aggregate_call(
@@ -910,6 +920,11 @@ fn simulate_registry_aggregate_call() {
 
     println!("2222222222222222222222222222222");
 
+    // let fetched_entry = call!(
+    //     user,
+    //     consumer.get_pair(provider1.account_id(), "ETH/USD".to_string())
+    // );
+    // println!("{:?}", fetched_entry);
     let fetched_entry = call!(
         user,
         consumer.get_pair(provider1.account_id(), "ETH/USD".to_string())

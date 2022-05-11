@@ -1,11 +1,12 @@
 use crate::*;
 use near_sdk::{
     serde::{Deserialize, Serialize},
-    Timestamp,
+    Timestamp, log
 };
-
+use ed25519_dalek::{PublicKey, Signature, Verifier, Signer};
+use std::convert::TryFrom;
 // maximum cost of storing a new entry in create_pair() - 170 * yocto per byte (1e19 as of 2022-04-14)
-#[allow(dead_code)]
+// #[allow(dead_code)]
 pub const STORAGE_COST: u128 = 1_700_000_000_000_000_000_000;
 
 #[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Debug)]
@@ -64,6 +65,33 @@ impl FPOContract {
         self.providers
             .insert(&env::predecessor_account_id(), &provider);
     }
+
+    #[payable]
+    pub fn push_data_signed(&mut self, signature: Vec<u8>, signer: AccountId, signer_pk: Vec<u8>, pair: String, price: String) {
+        let message = format!("{}:{}", pair, price);
+        let data: &[u8]  = message.as_bytes();
+        log!("data {:?}", data);
+        let sig = ed25519_dalek::Signature::try_from(signature.as_ref())
+                  .expect("Signature should be a valid array of 64 bytes [13, 254, 123, ...]");
+
+        let public_key = ed25519_dalek::PublicKey::from_bytes(
+            &signer_pk
+        ).unwrap();
+
+        if let Ok(_) = public_key.verify(data, &sig) {
+            log!("VERIFIES*********");
+            // Should find a way to make sure that the signer's accId is the pk owner
+            let mut provider = self.get_provider_expect(&signer);
+            let pair_name = format!("{}:{}", pair, signer);
+            provider.set_price(pair_name, U128::from(price.parse::<u128>().unwrap()), env::block_timestamp());
+
+            // self.providers
+            //     .insert(&env::predecessor_account_id(), &provider);
+        }
+    
+
+    }
+   
 
     /// Returns all data associated with a price pair by a provider
     pub fn get_entry(&self, pair: String, provider: AccountId) -> Option<PriceEntry> {

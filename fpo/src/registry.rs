@@ -1,7 +1,7 @@
 use crate::*;
 use callbacks::{ext_price_consumer, PriceType, GAS_TO_SEND_PRICE, ZERO_BALANCE};
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{Promise, Timestamp};
+use near_sdk::{Promise, Timestamp, log};
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Registry {
@@ -99,13 +99,14 @@ impl FPOContract {
             registry.providers.clone(),
             registry.min_last_update,
         );
-
+        log!("-----medians = {:?}", medians);
         // get the first element of every subarray in `pairs` to submit as associated pair name
         let pairs = registry
             .pairs
             .iter()
             .map(|p| p.first().unwrap().clone())
             .collect::<Vec<String>>();
+        log!("pairs = {:?}", pairs);
 
         ext_price_consumer::on_price_received(
             sender_id,

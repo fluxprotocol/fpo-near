@@ -49,7 +49,6 @@ pub struct Provider {
 impl Provider {
     pub fn new() -> Self {
         log!("Creating a new PROVIDER");
-
         Self {
             pairs: LookupMap::new("ps".as_bytes()),
         }
@@ -64,6 +63,7 @@ impl Default for Provider {
         Self::new()
     }
 }
+
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
@@ -105,24 +105,27 @@ impl Consumer {
         results: Vec<Option<U128>>,
         registry: Option<AccountId>,
     ) {
-        // if registry {
-        //     assert!(registry == REGISTERY.parse().unwrap());
-
-        // }
         match registry{
             Some(val) => {
                 assert!(val == REGISTERY.parse().unwrap());
-                log!("val {:?}", val);
+                // log!("val {:?}", val);
 
                 let mut provider = self
                 .providers
                 .get(&val)
                 .unwrap_or_else(Provider::new);
-                
+
+                // let mut provider2 = self
+                // .providers
+                // .get(&val)
+                // .expect("YALAHWIIII");
+                log!("provider.pairs {:?}", provider.pairs);
+
+                // log!("provider2.pairs {:?}", provider2.pairs);
 
                 for index in 0..pairs.len() {
                     let pair_name = format!("{}:{}", pairs[index], val);
-                    log!("pair_name {:?}", pair_name);
+                    // log!("pair_name {:?}", pair_name);
                     match results[index] {
                         Some(result) => {
                             log!("result {:?}", result);
@@ -141,6 +144,7 @@ impl Consumer {
 
             },
             None => {
+                log!("NOT A REGISTERY");
                 for index in 0..providers.len() {
                     let provider_account_id = &providers[index];
                     let mut provider = self
@@ -188,6 +192,7 @@ impl Consumer {
     pub fn get_pair(&self, provider: AccountId, pair: String) -> PriceEntry {
         let pair_name = format!("{}:{}", pair, provider);
         log!("+++++pair_name {:?}", pair_name);
+        log!("+++++provider {:?}", provider);
         let prov = self
             .providers
             .get(&provider)

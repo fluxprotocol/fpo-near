@@ -12,7 +12,15 @@ near-sdk = "4.0.0-pre.7"
 flux-sdk = { git = "https://github.com/fluxprotocol/flux-sdk-rs"}
 serde = "1.0.118"
 near-account-id = "0.12.0"
+byte-strings = "0.2.2"
+serde_bytes = "0.11"
+rand = "0.7.0"
+getrandom = { version = "0.2", features = ["js"] }
 
 [dev-dependencies]
 near-sdk-sim = "4.0.0-pre.7"
+
+[dependencies.ed25519-dalek]
+version = "1"
+
 
