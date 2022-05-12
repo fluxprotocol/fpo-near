@@ -30,7 +30,13 @@ pub trait PriceConsumer {
         providers: Vec<AccountId>,
         price_type: PriceType,
         results: Vec<Option<U128>>,
-        registry: Option<AccountId>,
+    );
+    fn on_registry_prices_received(
+        &self,
+        sender_id: AccountId,
+        pairs: Vec<String>,
+        results: Vec<Option<U128>>,
+        registry_owner: AccountId,
     );
 }
 
@@ -52,7 +58,6 @@ impl FPOContract {
             vec![provider],
             PriceType::Single,
             vec![price],
-            None,
             receiver_id,
             ZERO_BALANCE,
             GAS_TO_SEND_PRICE,
@@ -76,7 +81,6 @@ impl FPOContract {
             providers,
             PriceType::Multiple,
             entries,
-            None,
             receiver_id,
             ZERO_BALANCE,
             GAS_TO_SEND_PRICE * num_pairs.try_into().unwrap(),
@@ -99,7 +103,6 @@ impl FPOContract {
             providers,
             PriceType::Mean,
             vec![avg],
-            None,
             receiver_id,
             ZERO_BALANCE,
             GAS_TO_SEND_PRICE,
@@ -122,7 +125,6 @@ impl FPOContract {
             providers,
             PriceType::Median,
             vec![median],
-            None,
             receiver_id,
             ZERO_BALANCE,
             GAS_TO_SEND_PRICE,
@@ -145,7 +147,6 @@ impl FPOContract {
             providers,
             PriceType::Collect,
             collect,
-            None,
             receiver_id,
             ZERO_BALANCE,
             GAS_TO_SEND_PRICE,
@@ -175,7 +176,6 @@ impl FPOContract {
             vec![], // exclude providers
             PriceType::MeanMany,
             avgs,
-            None,
             receiver_id,
             ZERO_BALANCE,
             GAS_TO_SEND_PRICE,
@@ -205,7 +205,6 @@ impl FPOContract {
             vec![], // exclude providers
             PriceType::MedianMany,
             medians,
-            None,
             receiver_id,
             ZERO_BALANCE,
             GAS_TO_SEND_PRICE,

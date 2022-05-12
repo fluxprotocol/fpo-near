@@ -8,7 +8,7 @@ use near_sdk::{env, ext_contract, log, near_bindgen, AccountId, Gas, PanicOnDefa
 
 const NO_DEPOSIT: Balance = 0;
 const GAS_FOR_RESOLVE_TRANSFER: Gas = Gas(5_000_000_000_000);
-const REGISTERY : &str = "provider1";
+const REGISTRY: &str = "provider1";
 #[ext_contract(fpo)]
 trait FPO {
     fn get_price(&self, pair: String, provider: AccountId) -> Option<U128>;
@@ -81,7 +81,7 @@ pub enum PriceType {
     Mean,
     Median,
     Collect, // same as multiple but with min_last_update
-    MedianMany
+    MedianMany,
 }
 
 #[near_bindgen]
@@ -106,19 +106,15 @@ impl Consumer {
         registry: Option<AccountId>,
     ) {
         // if registry {
-        //     assert!(registry == REGISTERY.parse().unwrap());
+        //     assert!(registry == REGISTRY.parse().unwrap());
 
         // }
-        match registry{
+        match registry {
             Some(val) => {
-                assert!(val == REGISTERY.parse().unwrap());
+                assert!(val == REGISTRY.parse().unwrap());
                 log!("val {:?}", val);
 
-                let mut provider = self
-                .providers
-                .get(&val)
-                .unwrap_or_else(Provider::new);
-                
+                let mut provider = self.providers.get(&val).unwrap_or_else(Provider::new);
 
                 for index in 0..pairs.len() {
                     let pair_name = format!("{}:{}", pairs[index], val);
@@ -137,9 +133,9 @@ impl Consumer {
                         None => log!("Not found"),
                     }
                 }
-                
 
-            },
+                self.providers.insert(&val, &provider);
+            }
             None => {
                 for index in 0..providers.len() {
                     let provider_account_id = &providers[index];
@@ -148,7 +144,7 @@ impl Consumer {
                         .get(provider_account_id)
                         .unwrap_or_else(Provider::new);
                     let pair_name = format!("{}:{}", pairs[index], provider_account_id);
-        
+
                     if price_type == PriceType::Mean || price_type == PriceType::Median {
                         match results[0] {
                             Some(result) => {
@@ -174,14 +170,11 @@ impl Consumer {
                             None => log!("Not found"),
                         }
                     }
-        
+
                     self.providers.insert(provider_account_id, &provider);
                 }
-                
-            },
+            }
         }
-
-        
     }
 
     /// @dev Gets a cached price from this contract.

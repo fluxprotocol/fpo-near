@@ -816,14 +816,6 @@ fn init() -> (
 //     );
 // }
 
-
-
-
-
-
-
-
-
 #[test]
 fn simulate_registry_aggregate_call() {
     let (root, fpo, consumer) = init();
@@ -881,30 +873,27 @@ fn simulate_registry_aggregate_call() {
     let providers = vec![provider1.account_id(), provider2.account_id()];
 
     // create a registery for provider1
-    provider1.call(
-        fpo.account_id(),
-        "create_registry",
-        &json!([ 
-            vec![
-                pairs_eth,
-                pairs_btc,
-            ], 
-            vec![providers.clone(), providers.clone()], 
-            0])
+    provider1
+        .call(
+            fpo.account_id(),
+            "create_registry",
+            &json!([
+                vec![pairs_eth, pairs_btc,],
+                vec![providers.clone(), providers.clone()],
+                0
+            ])
             .to_string()
             .into_bytes(),
-        DEFAULT_GAS,
-        STORAGE_COST, // attached deposit
-    ).assert_success();
+            DEFAULT_GAS,
+            STORAGE_COST, // attached deposit
+        )
+        .assert_success();
 
     println!("1111111111111111111111111111111111");
 
     let tx = call!(
         user,
-        fpo.registry_aggregate_call(
-            provider1.account_id(),
-            consumer.account_id()
-        )
+        fpo.registry_aggregate_call(provider1.account_id(), consumer.account_id())
     );
     println!("{:?}", tx);
 
@@ -916,7 +905,6 @@ fn simulate_registry_aggregate_call() {
     );
     println!("{:?}", fetched_entry);
 
-
     // match &fetched_entry.promise_results()[1] {
     //     Some(res) => {
     //         assert_eq!(res.unwrap_json_value()["price"], "3000");
@@ -925,7 +913,6 @@ fn simulate_registry_aggregate_call() {
     // }
 
     // println!("333333333333333333333");
-
 
     // let fetched_entry = call!(
     //     user,
@@ -939,11 +926,6 @@ fn simulate_registry_aggregate_call() {
     //     None => println!("Retrieved Nothing"),
     // }
 
-
-
-    
-
-
     // aggregate values from root's registery
     // let aggregated = call!(
     //     root,
@@ -953,11 +935,10 @@ fn simulate_registry_aggregate_call() {
     //     "Returned aggregated values from root's registery: {:?}",
     //     &aggregated.unwrap_json_value()["result"].to_owned()
     // );
-    
+
     // debug_assert_eq!(
     //     &aggregated.unwrap_json_value()["result"].to_owned(),
     //     &json!([&"2750".to_string(), &"35000".to_string()])
-        
+
     // );
-   
 }
