@@ -8,7 +8,7 @@ use near_sdk::{env, ext_contract, log, near_bindgen, AccountId, Gas, PanicOnDefa
 
 const NO_DEPOSIT: Balance = 0;
 const GAS_FOR_RESOLVE_TRANSFER: Gas = Gas(5_000_000_000_000);
-const REGISTRY: &str = "provider1";
+
 #[ext_contract(fpo)]
 trait FPO {
     fn get_price(&self, pair: String, provider: AccountId) -> Option<U128>;
@@ -40,16 +40,20 @@ pub struct PriceEntry {
     price_type: PriceType,
 }
 
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
+pub struct Registry {
+    pub pairs: Vec<String>,
+    pub results: Vec<Option<U128>>,
+    pub sender_id: AccountId,
+}
 
+#[derive(BorshDeserialize, BorshSerialize)]
 pub struct Provider {
     pub pairs: LookupMap<String, PriceEntry>, // Maps "{TICKER_1}/{TICKER_2}-{PROVIDER}" => PriceEntry - e.g.: ETH/USD => PriceEntry
 }
 
 impl Provider {
     pub fn new() -> Self {
-        log!("Creating a new PROVIDER");
-
         Self {
             pairs: LookupMap::new("ps".as_bytes()),
         }
@@ -70,6 +74,7 @@ impl Default for Provider {
 pub struct Consumer {
     oracle: AccountId,
     providers: LookupMap<AccountId, Provider>, // maps:  AccountId => Provider
+    registries: LookupMap<AccountId, Registry>, // maps:  AccountId => Registry
 }
 
 #[derive(
@@ -81,7 +86,6 @@ pub enum PriceType {
     Mean,
     Median,
     Collect, // same as multiple but with min_last_update
-    MedianMany,
 }
 
 #[near_bindgen]
@@ -91,11 +95,11 @@ impl Consumer {
         Self {
             oracle,
             providers: LookupMap::new("p".as_bytes()),
+            registries: LookupMap::new("r".as_bytes()),
         }
     }
 
     /// @dev Called by FPO contract after a `call()` call to forward a price to the consumer.
-
     pub fn on_price_received(
         &mut self,
         sender_id: AccountId,
@@ -103,84 +107,73 @@ impl Consumer {
         providers: Vec<AccountId>,
         price_type: PriceType,
         results: Vec<Option<U128>>,
-        registry: Option<AccountId>,
     ) {
-        // if registry {
-        //     assert!(registry == REGISTRY.parse().unwrap());
+        for index in 0..providers.len() {
+            let provider_account_id = &providers[index];
+            let mut provider = self
+                .providers
+                .get(provider_account_id)
+                .unwrap_or_else(Provider::new);
+            let pair_name = format!("{}:{}", pairs[index], provider_account_id);
 
-        // }
-        match registry {
-            Some(val) => {
-                assert!(val == REGISTRY.parse().unwrap());
-                log!("val {:?}", val);
-
-                let mut provider = self.providers.get(&val).unwrap_or_else(Provider::new);
-
-                for index in 0..pairs.len() {
-                    let pair_name = format!("{}:{}", pairs[index], val);
-                    log!("pair_name {:?}", pair_name);
-                    match results[index] {
-                        Some(result) => {
-                            log!("result {:?}", result);
-
-                            let entry: PriceEntry = PriceEntry {
-                                price: result,
-                                sender: sender_id.clone(),
-                                price_type,
-                            };
-                            provider.set_pair(pair_name, &entry.clone());
-                        }
-                        None => log!("Not found"),
+            if price_type == PriceType::Mean || price_type == PriceType::Median {
+                match results[0] {
+                    Some(result) => {
+                        let entry: PriceEntry = PriceEntry {
+                            price: result,
+                            sender: sender_id.clone(),
+                            price_type,
+                        };
+                        provider.set_pair(pair_name, &entry.clone());
                     }
+                    None => log!("Not found"),
                 }
-
-                self.providers.insert(&val, &provider);
-            }
-            None => {
-                for index in 0..providers.len() {
-                    let provider_account_id = &providers[index];
-                    let mut provider = self
-                        .providers
-                        .get(provider_account_id)
-                        .unwrap_or_else(Provider::new);
-                    let pair_name = format!("{}:{}", pairs[index], provider_account_id);
-
-                    if price_type == PriceType::Mean || price_type == PriceType::Median {
-                        match results[0] {
-                            Some(result) => {
-                                let entry: PriceEntry = PriceEntry {
-                                    price: result,
-                                    sender: sender_id.clone(),
-                                    price_type,
-                                };
-                                provider.set_pair(pair_name, &entry.clone());
-                            }
-                            None => log!("Not found"),
-                        }
-                    } else {
-                        match results[index] {
-                            Some(result) => {
-                                let entry: PriceEntry = PriceEntry {
-                                    price: result,
-                                    sender: sender_id.clone(),
-                                    price_type,
-                                };
-                                provider.set_pair(pair_name, &entry.clone());
-                            }
-                            None => log!("Not found"),
-                        }
+            } else {
+                match results[index] {
+                    Some(result) => {
+                        let entry: PriceEntry = PriceEntry {
+                            price: result,
+                            sender: sender_id.clone(),
+                            price_type,
+                        };
+                        provider.set_pair(pair_name, &entry.clone());
                     }
-
-                    self.providers.insert(provider_account_id, &provider);
+                    None => log!("Not found"),
                 }
             }
+
+            self.providers.insert(provider_account_id, &provider);
         }
+    }
+
+    /// @dev Called by FPO contract after a `registry_aggregate_call` to forward aaggregated registry prices to the consumer.
+    pub fn on_registry_prices_received(
+        &mut self,
+        sender_id: AccountId,
+        pairs: Vec<String>,
+        results: Vec<Option<U128>>,
+        registry_owner: AccountId,
+    ) {
+        self.registries.insert(
+            &registry_owner,
+            &Registry {
+                pairs,
+                results,
+                sender_id,
+            },
+        );
+    }
+    /// @dev Gets a cached registry prices from this contract.
+    pub fn get_registry(&self, registry: AccountId) -> Registry {
+        self.registries
+            .get(&registry)
+            .expect("no registry with this account id")
     }
 
     /// @dev Gets a cached price from this contract.
     pub fn get_pair(&self, provider: AccountId, pair: String) -> PriceEntry {
         let pair_name = format!("{}:{}", pair, provider);
-        log!("+++++pair_name {:?}", pair_name);
+
         let prov = self
             .providers
             .get(&provider)

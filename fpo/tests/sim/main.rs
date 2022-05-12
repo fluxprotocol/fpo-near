@@ -25,6 +25,193 @@ fn init() -> (UserAccount, ContractAccount<FPOContractContract>) {
     (root, fpo)
 }
 
+#[test]
+fn simulate_creating_registeries() {
+    let (root, fpo) = init();
+    call!(root, fpo.new()).assert_success();
+
+    // create pricepairs from root
+    root.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2500)])
+            .to_string()
+            .into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST, // attached deposit
+    );
+    root.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["BTC/USD".to_string(), 8, U128(40000)])
+            .to_string()
+            .into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST, // attached deposit
+    );
+    call!(
+        root,
+        fpo.pair_exists("ETH/USD".to_string(), root.account_id())
+    )
+    .assert_success();
+    call!(
+        root,
+        fpo.pair_exists("BTC/USD".to_string(), root.account_id())
+    )
+    .assert_success();
+
+    // create pricepairs from bob
+    let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
+    bob.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(3000)])
+            .to_string()
+            .into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST, // attached deposit
+    );
+    bob.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["BTC/USD".to_string(), 8, U128(30000)])
+            .to_string()
+            .into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST, // attached deposit
+    );
+    call!(
+        bob,
+        fpo.pair_exists("ETH/USD".to_string(), bob.account_id())
+    )
+    .assert_success();
+    call!(
+        bob,
+        fpo.pair_exists("BTC/USD".to_string(), bob.account_id())
+    )
+    .assert_success();
+
+    // create a registry for root
+    root.call(
+        fpo.account_id(),
+        "create_registry",
+        &json!([
+            vec![
+                vec!["ETH/USD".to_string(), "ETH/USD".to_string()],
+                vec!["BTC/USD".to_string(), "BTC/USD".to_string()],
+            ],
+            vec![
+                vec![root.account_id(), bob.account_id()],
+                vec![root.account_id(), bob.account_id()]
+            ],
+            0
+        ])
+        .to_string()
+        .into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST, // attached deposit
+    );
+
+    // create a registry for bob
+    bob.call(
+        fpo.account_id(),
+        "create_registry",
+        &json!([
+            vec![
+                vec!["ETH/USD".to_string(), "ETH/USD".to_string()],
+                vec!["BTC/USD".to_string(), "BTC/USD".to_string()],
+            ],
+            vec![
+                vec![root.account_id(), bob.account_id()],
+                vec![root.account_id(), bob.account_id()]
+            ],
+            0
+        ])
+        .to_string()
+        .into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST, // attached deposit
+    );
+
+    // aggregate values from root's registry
+    let aggregated = call!(root, fpo.registry_aggregate(root.account_id()));
+    println!(
+        "Returned aggregated values from root's registry: {:?}",
+        &aggregated.unwrap_json_value().to_owned(),
+    );
+
+    debug_assert_eq!(
+        &aggregated.unwrap_json_value().to_owned(),
+        &json!([&"2750".to_string(), &"35000".to_string()])
+    );
+
+    // aggregate values from bob's registry
+    let aggregated = call!(bob, fpo.registry_aggregate(bob.account_id()));
+    println!(
+        "Returned aggregated values from bob's registry: {:?}",
+        &aggregated.unwrap_json_value().to_owned(),
+    );
+
+    debug_assert_eq!(
+        &aggregated.unwrap_json_value().to_owned(),
+        &json!([&"2750".to_string(), &"35000".to_string()])
+    );
+
+    // update root's ETH/USD pricefeed
+    call!(root, fpo.push_data("ETH/USD".to_string(), U128(4000))).assert_success();
+
+    // aggregate values from root's registry after updating
+    let aggregated = call!(root, fpo.registry_aggregate(root.account_id()));
+    println!(
+        "Returned aggregated values from root's  registry: {:?}",
+        &aggregated.unwrap_json_value().to_owned(),
+    );
+
+    debug_assert_eq!(
+        &aggregated.unwrap_json_value().to_owned(),
+        &json!([&"3500".to_string(), &"35000".to_string()])
+    );
+
+    // aggregate values from bob's registry after updating
+    let aggregated = call!(bob, fpo.registry_aggregate(bob.account_id()));
+    println!(
+        "Returned aggregated values from bob's registry: {:?}",
+        &aggregated.unwrap_json_value().to_owned(),
+    );
+
+    debug_assert_eq!(
+        &aggregated.unwrap_json_value().to_owned(),
+        &json!([&"3500".to_string(), &"35000".to_string()])
+    );
+
+    // update bob's BTC/USD pricefeed
+    call!(bob, fpo.push_data("BTC/USD".to_string(), U128(50000))).assert_success();
+
+    // aggregate values from root's registry after updating
+    let aggregated = call!(root, fpo.registry_aggregate(root.account_id()));
+    println!(
+        "Returned aggregated values from root's  registry: {:?}",
+        &aggregated.unwrap_json_value().to_owned(),
+    );
+
+    debug_assert_eq!(
+        &aggregated.unwrap_json_value().to_owned(),
+        &json!([&"3500".to_string(), &"45000".to_string()])
+    );
+
+    // aggregate values from bob's registry after updating
+    let aggregated = call!(bob, fpo.registry_aggregate(bob.account_id()));
+    println!(
+        "Returned aggregated values from bob's registry: {:?}",
+        &aggregated.unwrap_json_value().to_owned(),
+    );
+
+    debug_assert_eq!(
+        &aggregated.unwrap_json_value().to_owned(),
+        &json!([&"3500".to_string(), &"45000".to_string()])
+    );
+}
+
 // #[test]
 // fn simulate_create_pair() {
 //     let (root, fpo) = init();
@@ -495,190 +682,3 @@ fn init() -> (UserAccount, ContractAccount<FPOContractContract>) {
 //     println!("Returned MEDIAN: {:?}", &median.unwrap_json_value());
 //     debug_assert_eq!(&median.unwrap_json_value(), &"3000".to_string());
 // }
-
-#[test]
-fn simulate_creating_registeries() {
-    let (root, fpo) = init();
-    call!(root, fpo.new()).assert_success();
-
-    // create pricepairs from root
-    root.call(
-        fpo.account_id(),
-        "create_pair",
-        &json!(["ETH/USD".to_string(), 8, U128(2500)])
-            .to_string()
-            .into_bytes(),
-        DEFAULT_GAS,
-        STORAGE_COST, // attached deposit
-    );
-    root.call(
-        fpo.account_id(),
-        "create_pair",
-        &json!(["BTC/USD".to_string(), 8, U128(40000)])
-            .to_string()
-            .into_bytes(),
-        DEFAULT_GAS,
-        STORAGE_COST, // attached deposit
-    );
-    call!(
-        root,
-        fpo.pair_exists("ETH/USD".to_string(), root.account_id())
-    )
-    .assert_success();
-    call!(
-        root,
-        fpo.pair_exists("BTC/USD".to_string(), root.account_id())
-    )
-    .assert_success();
-
-    // create pricepairs from bob
-    let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
-    bob.call(
-        fpo.account_id(),
-        "create_pair",
-        &json!(["ETH/USD".to_string(), 8, U128(3000)])
-            .to_string()
-            .into_bytes(),
-        DEFAULT_GAS,
-        STORAGE_COST, // attached deposit
-    );
-    bob.call(
-        fpo.account_id(),
-        "create_pair",
-        &json!(["BTC/USD".to_string(), 8, U128(30000)])
-            .to_string()
-            .into_bytes(),
-        DEFAULT_GAS,
-        STORAGE_COST, // attached deposit
-    );
-    call!(
-        bob,
-        fpo.pair_exists("ETH/USD".to_string(), bob.account_id())
-    )
-    .assert_success();
-    call!(
-        bob,
-        fpo.pair_exists("BTC/USD".to_string(), bob.account_id())
-    )
-    .assert_success();
-
-    // create a registery for root
-    root.call(
-        fpo.account_id(),
-        "create_registry",
-        &json!([
-            vec![
-                vec!["ETH/USD".to_string(), "ETH/USD".to_string()],
-                vec!["BTC/USD".to_string(), "BTC/USD".to_string()],
-            ],
-            vec![
-                vec![root.account_id(), bob.account_id()],
-                vec![root.account_id(), bob.account_id()]
-            ],
-            0
-        ])
-        .to_string()
-        .into_bytes(),
-        DEFAULT_GAS,
-        STORAGE_COST, // attached deposit
-    );
-
-    // create a registery for bob
-    bob.call(
-        fpo.account_id(),
-        "create_registry",
-        &json!([
-            vec![
-                vec!["ETH/USD".to_string(), "ETH/USD".to_string()],
-                vec!["BTC/USD".to_string(), "BTC/USD".to_string()],
-            ],
-            vec![
-                vec![root.account_id(), bob.account_id()],
-                vec![root.account_id(), bob.account_id()]
-            ],
-            0
-        ])
-        .to_string()
-        .into_bytes(),
-        DEFAULT_GAS,
-        STORAGE_COST, // attached deposit
-    );
-
-    // aggregate values from root's registery
-    let aggregated = call!(root, fpo.registry_aggregate(root.account_id()));
-    println!(
-        "Returned aggregated values from root's registery: {:?}",
-        &aggregated.unwrap_json_value()["result"].to_owned()
-    );
-
-    debug_assert_eq!(
-        &aggregated.unwrap_json_value()["result"].to_owned(),
-        &json!([&"2750".to_string(), &"35000".to_string()])
-    );
-
-    // aggregate values from bob's registery
-    let aggregated = call!(bob, fpo.registry_aggregate(bob.account_id()));
-    println!(
-        "Returned aggregated values from bob's registery: {:?}",
-        &aggregated.unwrap_json_value()["result"].to_owned()
-    );
-
-    debug_assert_eq!(
-        &aggregated.unwrap_json_value()["result"].to_owned(),
-        &json!([&"2750".to_string(), &"35000".to_string()])
-    );
-
-    // update root's ETH/USD pricefeed
-    call!(root, fpo.push_data("ETH/USD".to_string(), U128(4000))).assert_success();
-
-    // aggregate values from root's registery after updating
-    let aggregated = call!(root, fpo.registry_aggregate(root.account_id()));
-    println!(
-        "Returned aggregated values from root's  registery: {:?}",
-        &aggregated.unwrap_json_value()["result"].to_owned()
-    );
-
-    debug_assert_eq!(
-        &aggregated.unwrap_json_value()["result"].to_owned(),
-        &json!([&"3500".to_string(), &"35000".to_string()])
-    );
-
-    // aggregate values from bob's registery after updating
-    let aggregated = call!(bob, fpo.registry_aggregate(bob.account_id()));
-    println!(
-        "Returned aggregated values from bob's registery: {:?}",
-        &aggregated.unwrap_json_value()["result"].to_owned()
-    );
-
-    debug_assert_eq!(
-        &aggregated.unwrap_json_value()["result"].to_owned(),
-        &json!([&"3500".to_string(), &"35000".to_string()])
-    );
-
-    // update bob's BTC/USD pricefeed
-    call!(bob, fpo.push_data("BTC/USD".to_string(), U128(50000))).assert_success();
-
-    // aggregate values from root's registery after updating
-    let aggregated = call!(root, fpo.registry_aggregate(root.account_id()));
-    println!(
-        "Returned aggregated values from root's  registery: {:?}",
-        &aggregated.unwrap_json_value()["result"].to_owned()
-    );
-
-    debug_assert_eq!(
-        &aggregated.unwrap_json_value()["result"].to_owned(),
-        &json!([&"3500".to_string(), &"45000".to_string()])
-    );
-
-    // aggregate values from bob's registery after updating
-    let aggregated = call!(bob, fpo.registry_aggregate(bob.account_id()));
-    println!(
-        "Returned aggregated values from bob's registery: {:?}",
-        &aggregated.unwrap_json_value()["result"].to_owned()
-    );
-
-    debug_assert_eq!(
-        &aggregated.unwrap_json_value()["result"].to_owned(),
-        &json!([&"3500".to_string(), &"45000".to_string()])
-    );
-}

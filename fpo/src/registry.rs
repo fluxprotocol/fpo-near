@@ -165,7 +165,7 @@ mod tests {
 
         assert_eq!(
             vec![Some(U128(2750)), Some(U128(35000))],
-            fpo_contract.registry_aggregate(bob()).result
+            fpo_contract.registry_aggregate(bob())
         );
     }
 }
