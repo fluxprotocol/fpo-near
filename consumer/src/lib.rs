@@ -1,3 +1,15 @@
+// This contract demonstrates three ways to fetch/consume prices from the FPO contract:
+//
+// 1. Make a call originating on the FPO contract with any `..._call()`
+//    function to forward prices to the `on_prices_received()` function
+//    in this contract.
+// 2. Make a call originating on the FPO contract with `registry_aggregate_call()`
+//    to forward prices from a registry to the `on_registry_prices_received()`
+//    function in this contract.
+// 3. Make a call originating from this contract with `get_price()`, `get_prices()`,
+//    `aggregate_avg()`, or `aggregate_median()` to forward prices to the
+//    `price_callback()` or `prices_callback()` function in this contract.
+
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;
 use near_sdk::json_types::U128;
@@ -99,7 +111,7 @@ impl Consumer {
         }
     }
 
-    /// @dev Called by FPO contract after a `call()` call to forward a price to the consumer.
+    /// @dev Called by FPO contract after a `..._call()` call to forward a price to the consumer.
     pub fn on_price_received(
         &mut self,
         sender_id: AccountId,
@@ -146,7 +158,7 @@ impl Consumer {
         }
     }
 
-    /// @dev Called by FPO contract after a `registry_aggregate_call` to forward aaggregated registry prices to the consumer.
+    /// @dev Called by FPO contract after a `registry_aggregate_call()` to forward aggregated registry prices to the consumer.
     pub fn on_registry_prices_received(
         &mut self,
         sender_id: AccountId,
