@@ -10,13 +10,13 @@ use crate::registry::Registry;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;
 use near_sdk::json_types::U128;
-use near_sdk::{env, near_bindgen, AccountId, BorshStorageKey, PanicOnDefault};
+use near_sdk::{env, near_bindgen, AccountId, BorshStorageKey, PanicOnDefault, PublicKey};
 
 /// Global variables
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct FPOContract {
-    pub providers: LookupMap<AccountId, Provider>, // maps:  AccountId => Provider
+    pub providers: LookupMap<PublicKey, Provider>, // maps:  AccountId => Provider
     pub registries: LookupMap<AccountId, Registry>, // maps:  AccountId => Registry
 }
 

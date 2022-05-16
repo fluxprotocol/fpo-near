@@ -1,4 +1,5 @@
 use crate::*;
+use near_sdk::PublicKey;
 use price_pair::PriceEntry;
 
 #[derive(BorshDeserialize, BorshSerialize)]
@@ -57,14 +58,14 @@ impl Default for Provider {
 /// Private contract methods
 impl FPOContract {
     /// Returns all the data associated with a provider (non-serializable because LookupMap)
-    pub fn get_provider_expect(&self, account_id: &AccountId) -> Provider {
+    pub fn get_provider_expect(&self, account_id: &PublicKey) -> Provider {
         self.providers
             .get(account_id)
             .expect("no provider with this account id")
     }
 
     /// Returns all the data associated with a provider wrapped in an Option
-    pub fn get_provider_option(&self, account_id: &AccountId) -> Option<Provider> {
+    pub fn get_provider_option(&self, account_id: &PublicKey) -> Option<Provider> {
         self.providers.get(account_id)
     }
 }

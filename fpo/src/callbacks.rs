@@ -27,10 +27,17 @@ pub trait PriceConsumer {
         &self,
         sender_id: AccountId,
         pairs: Vec<String>,
-        providers: Vec<AccountId>,
+        providers: Vec<PublicKey>,
         price_type: PriceType,
         results: Vec<Option<U128>>,
         registry: Option<AccountId>,
+    );
+    fn on_registry_prices_received(
+        &self,
+        sender_id: AccountId,
+        pairs: Vec<String>,
+        results: Vec<Option<U128>>,
+        registry_owner: AccountId,
     );
 }
 
@@ -41,7 +48,7 @@ impl FPOContract {
     pub fn get_price_call(
         &self,
         pair: String,
-        provider: AccountId,
+        provider: PublicKey,
         receiver_id: AccountId,
     ) -> Promise {
         let sender_id = env::predecessor_account_id();
@@ -63,7 +70,7 @@ impl FPOContract {
     pub fn get_prices_call(
         &self,
         pairs: Vec<String>,
-        providers: Vec<AccountId>,
+        providers: Vec<PublicKey>,
         receiver_id: AccountId,
     ) -> Promise {
         let sender_id = env::predecessor_account_id();
@@ -87,7 +94,7 @@ impl FPOContract {
     pub fn aggregate_avg_call(
         &self,
         pairs: Vec<String>,
-        providers: Vec<AccountId>,
+        providers: Vec<PublicKey>,
         min_last_update: Timestamp,
         receiver_id: AccountId,
     ) -> Promise {
@@ -110,7 +117,7 @@ impl FPOContract {
     pub fn aggregate_median_call(
         &self,
         pairs: Vec<String>,
-        providers: Vec<AccountId>,
+        providers: Vec<PublicKey>,
         min_last_update: Timestamp,
         receiver_id: AccountId,
     ) -> Promise {
@@ -133,7 +140,7 @@ impl FPOContract {
     pub fn aggregate_collect_call(
         &self,
         pairs: Vec<String>,
-        providers: Vec<AccountId>,
+        providers: Vec<PublicKey>,
         min_last_update: Timestamp,
         receiver_id: AccountId,
     ) -> Promise {
@@ -156,7 +163,7 @@ impl FPOContract {
     pub fn aggregate_avg_many_call(
         &self,
         pairs: Vec<Vec<String>>,
-        providers: Vec<Vec<AccountId>>,
+        providers: Vec<Vec<PublicKey>>,
         min_last_update: Timestamp,
         receiver_id: AccountId,
     ) -> Promise {
@@ -186,7 +193,7 @@ impl FPOContract {
     pub fn aggregate_median_many_call(
         &self,
         pairs: Vec<Vec<String>>,
-        providers: Vec<Vec<AccountId>>,
+        providers: Vec<Vec<PublicKey>>,
         min_last_update: Timestamp,
         receiver_id: AccountId,
     ) -> Promise {

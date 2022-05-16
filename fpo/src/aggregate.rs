@@ -8,7 +8,7 @@ impl FPOContract {
     pub fn aggregate_avg(
         &self,
         pairs: Vec<String>,
-        providers: Vec<AccountId>,
+        providers: Vec<PublicKey>,
         min_last_update: Timestamp,
     ) -> Option<U128> {
         assert_eq!(
@@ -25,7 +25,7 @@ impl FPOContract {
             .zip(pairs.iter())
             .fold(0, |s, (account_id, pair)| {
                 let provider = self.get_provider_expect(account_id);
-                let pair_name = format!("{}:{}", pair, account_id);
+                let pair_name = format!("{}:{:?}", pair, account_id);
                 let entry = provider.get_entry_expect(&pair_name);
 
                 // If this entry was updated after the min_last_update take it out of the average
@@ -48,7 +48,7 @@ impl FPOContract {
     pub fn aggregate_median(
         &self,
         pairs: Vec<String>,
-        providers: Vec<AccountId>,
+        providers: Vec<PublicKey>,
         min_last_update: Timestamp,
     ) -> Option<U128> {
         assert_eq!(
@@ -64,7 +64,7 @@ impl FPOContract {
             vec![],
             |mut arr: Vec<u128>, (account_id, pair)| {
                 let provider = self.get_provider_expect(account_id);
-                let pair_name = format!("{}:{}", pair, account_id);
+                let pair_name = format!("{}:{:?}", pair, account_id);
                 let entry = provider.get_entry_expect(&pair_name);
 
                 // If this entry was updated after the min_last_update take it out of the average
@@ -89,7 +89,7 @@ impl FPOContract {
     pub fn aggregate_collect(
         &self,
         pairs: Vec<String>,
-        providers: Vec<AccountId>,
+        providers: Vec<PublicKey>,
         min_last_update: Timestamp,
     ) -> Vec<Option<U128>> {
         assert_eq!(
@@ -106,7 +106,7 @@ impl FPOContract {
                     .providers
                     .get(account_id)
                     .expect("no provider with account id");
-                let pair_name = format!("{}:{}", pair, account_id);
+                let pair_name = format!("{}:{:?}", pair, account_id);
                 let entry = provider.get_entry_expect(&pair_name);
 
                 // If this entry was updated after the min_last_update take it out of the average
@@ -123,7 +123,7 @@ impl FPOContract {
     pub fn aggregate_avg_many(
         &self,
         pairs: Vec<Vec<String>>,
-        providers: Vec<Vec<AccountId>>,
+        providers: Vec<Vec<PublicKey>>,
         min_last_update: Timestamp,
     ) -> Vec<Option<U128>> {
         assert_eq!(
@@ -145,7 +145,7 @@ impl FPOContract {
     pub fn aggregate_median_many(
         &self,
         pairs: Vec<Vec<String>>,
-        providers: Vec<Vec<AccountId>>,
+        providers: Vec<Vec<PublicKey>>,
         min_last_update: Timestamp,
     ) -> Vec<Option<U128>> {
         assert_eq!(
@@ -167,7 +167,7 @@ impl FPOContract {
     pub fn aggregate_collect_many(
         &self,
         pairs: Vec<Vec<String>>,
-        providers: Vec<Vec<AccountId>>,
+        providers: Vec<Vec<PublicKey>>,
         min_last_update: Timestamp,
     ) -> Vec<Vec<Option<U128>>> {
         assert_eq!(
@@ -205,18 +205,44 @@ mod tests {
     fn carol() -> AccountId {
         "carol.near".parse().unwrap()
     }
-    fn dina() -> AccountId {
-        "dina.near".parse().unwrap()
+    // fn dina() -> AccountId {
+    //     "dina.near".parse().unwrap()
+    // }
+    fn bobpk() -> PublicKey {
+        PublicKey::from(
+            "Eg2jtsiMrprn7zgKKUk79qM1hWhANsFyE6JSX4txLEuy"
+                .parse()
+                .unwrap(),
+        )
     }
+    fn alicepk() -> PublicKey {
+        PublicKey::from(
+            "HghiythFFPjVXwc9BLNi8uqFmfQc1DWFrJQ4nE6ANo7R"
+                .parse()
+                .unwrap(),
+        )
+    }
+    fn carolpk() -> PublicKey {
+        PublicKey::from(
+            "2EfbwnQHPBWQKbNczLiVznFghh9qs716QT71zN6L1D95"
+                .parse()
+                .unwrap(),
+        )
+    }
+    // fn dinapk() -> PublicKey {
+    //     PublicKey::from("Eg2jtsiMrprn7zgKKUk79qM1hWhANsFyE6JSX4txLEuy".parse().unwrap())
+    // }
 
     fn get_context(
         predecessor_account_id: AccountId,
-        current_account_id: AccountId,
+        // current_account_id: AccountId,
+        signer_pk: PublicKey,
     ) -> VMContextBuilder {
         let mut builder = VMContextBuilder::new();
         builder
-            .current_account_id(current_account_id.clone())
-            .signer_account_id("robert.testnet".parse().unwrap())
+            // .current_account_id(current_account_id.clone())
+            // .signer_account_id("robert.testnet".parse().unwrap())
+            .signer_account_pk(signer_pk)
             .predecessor_account_id(predecessor_account_id.clone())
             .attached_deposit(STORAGE_COST);
         builder
@@ -225,7 +251,7 @@ mod tests {
     #[test]
     fn aggregate_avg() {
         // alice is the signer
-        let mut context = get_context(alice(), alice());
+        let mut context = get_context(alice(), alicepk());
         testing_env!(context.build());
 
         // instantiate a contract variable
@@ -233,27 +259,27 @@ mod tests {
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2000));
 
         // switch to bob as signer
-        context = get_context(bob(), bob());
+        context = get_context(bob(), bobpk());
         testing_env!(context.build());
 
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
 
         // switch to carol as signer
-        context = get_context(carol(), carol());
+        context = get_context(carol(), carolpk());
         testing_env!(context.build());
 
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
 
-        // switch to dina as signer
-        context = get_context(dina(), dina());
-        testing_env!(context.build());
+        // // switch to dina as signer
+        // context = get_context(dina(), dinapk());
+        // testing_env!(context.build());
 
-        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
+        // fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
 
         assert_eq!(
             U128(2000),
             fpo_contract
-                .get_entry("ETH/USD".to_string(), alice())
+                .get_entry("ETH/USD".to_string(), alicepk())
                 .unwrap()
                 .price
         );
@@ -261,7 +287,7 @@ mod tests {
         assert_eq!(
             U128(4000),
             fpo_contract
-                .get_entry("ETH/USD".to_string(), bob())
+                .get_entry("ETH/USD".to_string(), bobpk())
                 .unwrap()
                 .price
         );
@@ -269,34 +295,34 @@ mod tests {
         assert_eq!(
             U128(4000),
             fpo_contract
-                .get_entry("ETH/USD".to_string(), carol())
+                .get_entry("ETH/USD".to_string(), carolpk())
                 .unwrap()
                 .price
         );
-        assert_eq!(
-            U128(4000),
-            fpo_contract
-                .get_entry("ETH/USD".to_string(), carol())
-                .unwrap()
-                .price
-        );
+        // assert_eq!(
+        //     U128(4000),
+        //     fpo_contract
+        //         .get_entry("ETH/USD".to_string(), dinapk())
+        //         .unwrap()
+        //         .price
+        // );
 
         let pairs = vec![
             "ETH/USD".to_string(),
             "ETH/USD".to_string(),
             "ETH/USD".to_string(),
-            "ETH/USD".to_string(),
+            // "ETH/USD".to_string(),
         ];
         assert_eq!(
-            Some(U128(3500)),
-            fpo_contract.aggregate_avg(pairs, vec![alice(), bob(), carol(), dina()], 0)
+            Some(U128(3333)), // was 3500
+            fpo_contract.aggregate_avg(pairs, vec![alicepk(), bobpk(), carolpk()], 0)
         );
     }
 
     #[test]
     fn aggregate_median() {
         // alice is the signer
-        let mut context = get_context(alice(), alice());
+        let mut context = get_context(alice(), alicepk());
         testing_env!(context.build());
 
         // instantiate a contract variable
@@ -304,27 +330,27 @@ mod tests {
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2000));
 
         // switch to bob as signer
-        context = get_context(bob(), bob());
+        context = get_context(bob(), bobpk());
         testing_env!(context.build());
 
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2000));
 
         // switch to carol as signer
-        context = get_context(carol(), carol());
+        context = get_context(carol(), carolpk());
         testing_env!(context.build());
 
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
 
-        // switch to dina as signer
-        context = get_context(dina(), dina());
-        testing_env!(context.build());
+        // // switch to dina as signer
+        // context = get_context(dina(), dinapk());
+        // testing_env!(context.build());
 
-        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
+        // fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
 
         assert_eq!(
             U128(2000),
             fpo_contract
-                .get_entry("ETH/USD".to_string(), alice())
+                .get_entry("ETH/USD".to_string(), alicepk())
                 .unwrap()
                 .price
         );
@@ -332,7 +358,7 @@ mod tests {
         assert_eq!(
             U128(2000),
             fpo_contract
-                .get_entry("ETH/USD".to_string(), bob())
+                .get_entry("ETH/USD".to_string(), bobpk())
                 .unwrap()
                 .price
         );
@@ -340,34 +366,34 @@ mod tests {
         assert_eq!(
             U128(4000),
             fpo_contract
-                .get_entry("ETH/USD".to_string(), carol())
+                .get_entry("ETH/USD".to_string(), carolpk())
                 .unwrap()
                 .price
         );
-        assert_eq!(
-            U128(4000),
-            fpo_contract
-                .get_entry("ETH/USD".to_string(), dina())
-                .unwrap()
-                .price
-        );
+        // assert_eq!(
+        //     U128(4000),
+        //     fpo_contract
+        //         .get_entry("ETH/USD".to_string(), dinapk())
+        //         .unwrap()
+        //         .price
+        // );
 
         let pairs = vec![
             "ETH/USD".to_string(),
             "ETH/USD".to_string(),
             "ETH/USD".to_string(),
-            "ETH/USD".to_string(),
+            // "ETH/USD".to_string(),
         ];
         assert_eq!(
-            Some(U128(3000)),
-            fpo_contract.aggregate_median(pairs, vec![alice(), bob(), carol(), dina()], 0)
+            Some(U128(2000)), // was 3000
+            fpo_contract.aggregate_median(pairs, vec![alicepk(), bobpk(), carolpk()], 0)
         );
     }
 
     #[test]
     fn aggregate_median_many() {
         // alice is the signer
-        let mut context = get_context(alice(), alice());
+        let mut context = get_context(alice(), alicepk());
         testing_env!(context.build());
 
         // instantiate a contract variable
@@ -376,41 +402,41 @@ mod tests {
         fpo_contract.create_pair("BTC/USD".to_string(), 8, U128(30000));
 
         // switch to bob as signer
-        context = get_context(bob(), bob());
+        context = get_context(bob(), bobpk());
         testing_env!(context.build());
 
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2000));
         fpo_contract.create_pair("BTC/USD".to_string(), 8, U128(30000));
 
         // switch to carol as signer
-        context = get_context(carol(), carol());
+        context = get_context(carol(), carolpk());
         testing_env!(context.build());
 
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
         fpo_contract.create_pair("BTC/USD".to_string(), 8, U128(40000));
 
-        // switch to dina as signer
-        context = get_context(dina(), dina());
-        testing_env!(context.build());
+        // // switch to dina as signer
+        // context = get_context(dina(), dinapk());
+        // testing_env!(context.build());
 
-        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
-        fpo_contract.create_pair("BTC/USD".to_string(), 8, U128(40000));
+        // fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(4000));
+        // fpo_contract.create_pair("BTC/USD".to_string(), 8, U128(40000));
 
         let pairs_eth = vec![
             "ETH/USD".to_string(),
             "ETH/USD".to_string(),
             "ETH/USD".to_string(),
-            "ETH/USD".to_string(),
+            // "ETH/USD".to_string(),
         ];
         let pairs_btc = vec![
             "BTC/USD".to_string(),
             "BTC/USD".to_string(),
             "BTC/USD".to_string(),
-            "BTC/USD".to_string(),
+            // "BTC/USD".to_string(),
         ];
-        let providers = vec![alice(), bob(), carol(), dina()];
+        let providers = vec![alicepk(), bobpk(), carolpk()];
         assert_eq!(
-            vec![Some(U128(3000)), Some(U128(35000))],
+            vec![Some(U128(2000)), Some(U128(30000))], // was 3000, 35000
             fpo_contract.aggregate_median_many(
                 vec![pairs_eth, pairs_btc],
                 vec![providers.clone(), providers],
