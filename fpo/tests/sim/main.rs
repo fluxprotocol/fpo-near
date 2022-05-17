@@ -1,33 +1,12 @@
-// use std::io::Bytes;
-
-// use std::str::Bytes;
-// use ::byte_strings::concat_bytes;
-
-// use std::convert::TryFrom;
-// use std::str::FromStr;
-
-// use near_account_id::AccountId;
 use near_fpo::FPOContractContract;
 pub use near_sdk::json_types::Base64VecU8;
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::json;
 use near_sdk::{log, PublicKey};
 use near_sdk_sim::borsh::BorshSerialize;
-use near_sdk_sim::near_crypto::{InMemorySigner, KeyType, Signer};
-// use near_sdk_sim::near_crypto::{InMemorySigner, KeyType, EmptySigner};
+use near_sdk_sim::near_crypto::Signer;
 use near_sdk_sim::to_yocto;
 use near_sdk_sim::{call, deploy, init_simulator, ContractAccount, UserAccount};
-// extern crate ed25519_dalek;
-// extern crate rand;
-
-// use rand::rngs::{OsRng};
-// use rand_core::{RngCore, OsRng};
-
-// use ed25519_dalek::Keypair;
-// use ed25519_dalek::Signature;
-// use ed25519_dalek::{Signature, Keypair};
-// use near_sdk_sim::near_crypto::Signer;
-// use near_sdk_sim::near_crypto::Signer;
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
     FPO_BYTES => "../res/near_fpo.wasm",
@@ -54,7 +33,7 @@ fn init() -> (UserAccount, ContractAccount<FPOContractContract>) {
 fn simulate_push_data_signed() {
     let (root, fpo) = init();
 
-    call!(root, fpo.new()).assert_success();
+    call!(root, fpo.new("admin".parse().unwrap())).assert_success();
     // create a price pair, check if it exists, and get the value
     root.call(
         fpo.account_id(),
@@ -133,7 +112,7 @@ fn simulate_push_data_signed() {
 #[test]
 fn simulate_create_pair() {
     let (root, fpo) = init();
-    call!(root, fpo.new()).assert_success();
+    call!(root, fpo.new("admin".parse().unwrap())).assert_success();
     let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
 
     // create a price pair, check if it exists, and get the value
@@ -169,7 +148,7 @@ fn simulate_create_pair() {
 #[test]
 fn simulate_create_smae_pair() {
     let (root, fpo) = init();
-    call!(root, fpo.new()).assert_success();
+    call!(root, fpo.new("admin".parse().unwrap())).assert_success();
     // let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
 
     // create a price pair
@@ -191,7 +170,7 @@ fn simulate_create_smae_pair() {
 fn simulate_push_data() {
     let (root, fpo) = init();
 
-    call!(root, fpo.new()).assert_success();
+    call!(root, fpo.new("admin".parse().unwrap())).assert_success();
     let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
 
     // create a price pair, check if it exists, and get the value
@@ -235,7 +214,7 @@ fn simulate_push_data() {
 #[test]
 fn simulate_different_providers() {
     let (root, fpo) = init();
-    call!(root, fpo.new()).assert_success();
+    call!(root, fpo.new("admin".parse().unwrap())).assert_success();
     let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
 
     // create a price pair from root
@@ -295,7 +274,7 @@ fn simulate_different_providers() {
 #[test]
 fn simulate_different_pairs() {
     let (root, fpo) = init();
-    call!(root, fpo.new()).assert_success();
+    call!(root, fpo.new("admin".parse().unwrap())).assert_success();
     // let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
 
     // create a price pair from bob
@@ -359,7 +338,7 @@ fn simulate_different_pairs() {
 #[test]
 fn simulate_agg_avg() {
     let (root, fpo) = init();
-    call!(root, fpo.new()).assert_success();
+    call!(root, fpo.new("admin".parse().unwrap())).assert_success();
     let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
 
     // create a price pair from root
@@ -435,7 +414,7 @@ fn simulate_agg_avg() {
 #[test]
 fn simulate_agg_median() {
     let (root, fpo) = init();
-    call!(root, fpo.new()).assert_success();
+    call!(root, fpo.new("admin".parse().unwrap())).assert_success();
     let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
 
     // create a price pair from root
@@ -511,7 +490,7 @@ fn simulate_agg_median() {
 #[test]
 fn simulate_agg_median_diff_ids() {
     let (root, fpo) = init();
-    call!(root, fpo.new()).assert_success();
+    call!(root, fpo.new("admin".parse().unwrap())).assert_success();
     let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
 
     // create a price pair from root
@@ -587,7 +566,7 @@ fn simulate_agg_median_diff_ids() {
 #[test]
 fn simulate_creating_registeries() {
     let (root, fpo) = init();
-    call!(root, fpo.new()).assert_success();
+    call!(root, fpo.new("admin".parse().unwrap())).assert_success();
     let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
 
     // create pricepairs from root

@@ -207,7 +207,7 @@ mod tests {
     // fn pair_name_too_long() {
     //     let context = get_context(alice(), alicepk());
     //     testing_env!(context.build());
-    //     let mut fpo_contract = FPOContract::new();
+    //     let mut fpo_contract = FPOContract::new(alice());
     //     fpo_contract.create_pair(
     //         "1234567890123".to_string(),
     //         u16::max_value(),
@@ -219,7 +219,7 @@ mod tests {
     fn measure_storage_cost() {
         let context = get_context(alice(), alicepk());
         testing_env!(context.build());
-        let mut fpo_contract = FPOContract::new();
+        let mut fpo_contract = FPOContract::new(alice());
 
         let storage_used_before = env::storage_usage();
         fpo_contract.create_pair(
@@ -236,7 +236,7 @@ mod tests {
     fn create_pair() {
         let context = get_context(alice(), alicepk());
         testing_env!(context.build());
-        let mut fpo_contract = FPOContract::new();
+        let mut fpo_contract = FPOContract::new(alice());
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
         assert_eq!(
             true,
@@ -248,7 +248,7 @@ mod tests {
     fn create_diff_pairs() {
         let context = get_context(alice(), alicepk());
         testing_env!(context.build());
-        let mut fpo_contract = FPOContract::new();
+        let mut fpo_contract = FPOContract::new(alice());
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
         assert_eq!(
             true,
@@ -279,7 +279,7 @@ mod tests {
     fn create_same_pair() {
         let context = get_context(alice(), alicepk());
         testing_env!(context.build());
-        let mut fpo_contract = FPOContract::new();
+        let mut fpo_contract = FPOContract::new(alice());
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
         assert_eq!(
             true,
@@ -293,7 +293,7 @@ mod tests {
     fn push_data() {
         let context = get_context(alice(), alicepk());
         testing_env!(context.build());
-        let mut fpo_contract = FPOContract::new();
+        let mut fpo_contract = FPOContract::new(alice());
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
         assert_eq!(
             U128(2500),
@@ -319,7 +319,7 @@ mod tests {
         let mut context = get_context(alice(), alicepk());
         testing_env!(context.build());
 
-        let mut fpo_contract = FPOContract::new();
+        let mut fpo_contract = FPOContract::new(alice());
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
         assert_eq!(
             U128(2500),

@@ -255,7 +255,7 @@ mod tests {
         testing_env!(context.build());
 
         // instantiate a contract variable
-        let mut fpo_contract = FPOContract::new();
+        let mut fpo_contract = FPOContract::new(alice());
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2000));
 
         // switch to bob as signer
@@ -326,7 +326,7 @@ mod tests {
         testing_env!(context.build());
 
         // instantiate a contract variable
-        let mut fpo_contract = FPOContract::new();
+        let mut fpo_contract = FPOContract::new(alice());
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2000));
 
         // switch to bob as signer
@@ -397,7 +397,7 @@ mod tests {
         testing_env!(context.build());
 
         // instantiate a contract variable
-        let mut fpo_contract = FPOContract::new();
+        let mut fpo_contract = FPOContract::new(alice());
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2000));
         fpo_contract.create_pair("BTC/USD".to_string(), 8, U128(30000));
 

@@ -1,3 +1,4 @@
+mod admin;
 mod aggregate;
 mod callbacks;
 mod math;
@@ -18,6 +19,7 @@ use near_sdk::{env, near_bindgen, AccountId, BorshStorageKey, PanicOnDefault, Pu
 pub struct FPOContract {
     pub providers: LookupMap<PublicKey, Provider>, // maps:  AccountId => Provider
     pub registries: LookupMap<AccountId, Registry>, // maps:  AccountId => Registry
+    pub admin: AccountId,
 }
 
 /// LookupMap keys
@@ -31,8 +33,9 @@ enum FPOStorageKeys {
 #[near_bindgen]
 impl FPOContract {
     #[init]
-    pub fn new() -> Self {
+    pub fn new(admin: AccountId) -> Self {
         Self {
+            admin,
             providers: LookupMap::new(FPOStorageKeys::Providers),
             registries: LookupMap::new(FPOStorageKeys::Registries),
         }

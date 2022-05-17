@@ -46,7 +46,7 @@ fn simulate_get_price() {
 
     let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
     let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
-    call!(provider1, fpo.new()).assert_success();
+    call!(provider1, fpo.new("admin".parse().unwrap())).assert_success();
     let provider1_pk: PublicKey = provider1.signer.public_key.to_string().parse().unwrap();
     // let provider2_pk: PublicKey = provider2.signer.public_key.to_string().parse().unwrap();
 
@@ -96,7 +96,7 @@ fn simulate_get_prices() {
     let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
     let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
 
-    call!(root, fpo.new()).assert_success();
+    call!(root, fpo.new("admin".parse().unwrap())).assert_success();
     call!(root, consumer.new(fpo.account_id())).assert_success();
 
     // let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
@@ -172,7 +172,7 @@ fn simulate_agg_avg() {
 
     let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
     let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
-    call!(root, fpo.new()).assert_success();
+    call!(root, fpo.new("admin".parse().unwrap())).assert_success();
     call!(root, consumer.new(fpo.account_id())).assert_success();
 
     // let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
@@ -250,7 +250,7 @@ fn simulate_agg_median() {
     let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
     let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
 
-    call!(root, fpo.new()).assert_success();
+    call!(root, fpo.new("admin".parse().unwrap())).assert_success();
     call!(root, consumer.new(fpo.account_id())).assert_success();
 
     // let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
@@ -329,7 +329,7 @@ fn simulate_get_price_call() {
     let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
     let user = root.create_user("user".parse().unwrap(), to_yocto("1000000"));
 
-    call!(root, fpo.new()).assert_success();
+    call!(root, fpo.new("admin".parse().unwrap())).assert_success();
     call!(root, consumer.new(fpo.account_id())).assert_success();
     // let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
 
@@ -391,7 +391,7 @@ fn simulate_get_prices_call() {
 
     let user = root.create_user("user".parse().unwrap(), to_yocto("1000000"));
 
-    call!(root, fpo.new()).assert_success();
+    call!(root, fpo.new("admin".parse().unwrap())).assert_success();
     call!(root, consumer.new(fpo.account_id())).assert_success();
     // let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
 
@@ -492,7 +492,7 @@ fn simulate_get_prices_call2() {
 
     let user = root.create_user("user".parse().unwrap(), to_yocto("1000000"));
 
-    call!(root, fpo.new()).assert_success();
+    call!(root, fpo.new("admin".parse().unwrap())).assert_success();
     call!(root, consumer.new(fpo.account_id())).assert_success();
     // let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
 
@@ -592,7 +592,7 @@ fn simulate_aggregate_avg_call() {
 
     let user = root.create_user("user".parse().unwrap(), to_yocto("1000000"));
 
-    call!(root, fpo.new()).assert_success();
+    call!(root, fpo.new("admin".parse().unwrap())).assert_success();
     call!(root, consumer.new(fpo.account_id())).assert_success();
     // let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
 
@@ -693,7 +693,7 @@ fn simulate_aggregate_median_call() {
 
     let user = root.create_user("user".parse().unwrap(), to_yocto("1000000"));
 
-    call!(root, fpo.new()).assert_success();
+    call!(root, fpo.new("admin".parse().unwrap())).assert_success();
     call!(root, consumer.new(fpo.account_id())).assert_success();
     // let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
 
@@ -794,7 +794,7 @@ fn simulate_aggregate_median_many_call() {
 
     let user = root.create_user("user".parse().unwrap(), to_yocto("1000000"));
 
-    call!(root, fpo.new()).assert_success();
+    call!(root, fpo.new("admin".parse().unwrap())).assert_success();
     call!(root, consumer.new(fpo.account_id())).assert_success();
     // let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
 
@@ -865,7 +865,7 @@ fn simulate_registry_aggregate_call() {
 
     let user = root.create_user("user".parse().unwrap(), to_yocto("1000000"));
 
-    call!(root, fpo.new()).assert_success();
+    call!(root, fpo.new("admin".parse().unwrap())).assert_success();
     call!(root, consumer.new(fpo.account_id())).assert_success();
     // let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
 

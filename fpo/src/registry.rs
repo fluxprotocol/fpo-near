@@ -156,7 +156,7 @@ mod tests {
         testing_env!(context.build());
 
         // create fpo contract
-        let mut fpo_contract = FPOContract::new();
+        let mut fpo_contract = FPOContract::new(alice());
 
         // alice creates feeds for ETH/USD and BTC/USD
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500));
