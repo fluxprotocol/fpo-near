@@ -1,11 +1,8 @@
-use near_sdk::log;
-
 use crate::*;
 
 /// Private contract methods
 impl FPOContract {
     pub fn assert_admin(&self) {
-        log!("HIIII");
         assert_eq!(
             self.admin,
             env::predecessor_account_id(),
@@ -22,6 +19,26 @@ impl FPOContract {
         self.assert_admin();
         self.admin = new_admin;
     }
+
+    pub fn add_signers(&mut self, received_signers: Vec<PublicKey>, pair: String) {
+        self.assert_admin();
+        let mut entry = self.pairs.get(&pair).expect("No pair found");
+        for signer in received_signers {
+            entry.signers.push(signer);
+        }
+        self.pairs.insert(&pair, &entry);
+    }
+    pub fn rm_signers(&mut self, received_signers: Vec<PublicKey>, pair: String) {
+        self.assert_admin();
+        let mut entry = self.pairs.get(&pair).expect("No pair found");
+        for signer in received_signers {
+            let index = entry.signers.iter().position(|x| *x == signer).unwrap();
+            entry.signers.remove(index);
+        }
+        self.pairs.insert(&pair, &entry);
+    }
+
+    
 }
 
 /// Admin tests

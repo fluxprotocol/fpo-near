@@ -9,20 +9,21 @@ use ed25519_dalek::Verifier;
 use near_sdk::collections::UnorderedSet;
 
 use near_sdk::json_types::U128;
+use near_sdk::collections::LookupSet;
 
 use std::{convert::TryFrom, cmp::Ordering};
 // maximum cost of storing a new entry in create_pair() - 170 * yocto per byte (1e19 as of 2022-04-14)
 // #[allow(dead_code)]
 pub const STORAGE_COST: u128 = 5_700_000_000_000_000_000_000; // was 1_700_000_000_000_000_000_000
 
-#[derive(BorshDeserialize, BorshSerialize, Deserialize, Serialize, Debug)]
+#[derive(BorshDeserialize, BorshSerialize,Serialize, Deserialize, Debug)]
 pub struct PriceEntry {
     pub price: U128,            // Last reported price
     pub decimals: u16,          // Amount of decimals (e.g. if 2, 100 = 1.00)
     pub last_update: Timestamp, // Time of report
     // pub signers: UnorderedSet<PublicKey>,
     pub signers: Vec<PublicKey>,
-
+    // pub signers: LookupSet<PublicKey>
 }
 
 
@@ -30,6 +31,7 @@ impl PriceEntry {
     pub fn new(price: U128, decimals: u16, last_update: Timestamp) -> Self {
         Self {
             // signers: UnorderedSet::new(b"s"),
+            // signers: LookupSet::new(b"s"),
             signers: Vec::new(),
             price,
             decimals,
@@ -46,6 +48,32 @@ impl PriceEntry {
     // }
 }
 
+/// Private contract methods
+impl FPOContract {
+    // /// Returns all the data associated with a provider (non-serializable because LookupMap)
+    pub fn get_entry_expect(&self, pair: &String) -> PriceEntry {
+        self.pairs
+            .get(pair)
+            .expect("no pair found")
+    }
+
+    /// Returns all the data associated with a provider wrapped in an Option
+    pub fn get_entry_option(&self, pair: &String) -> Option<PriceEntry> {
+        self.pairs.get(pair)
+    }
+
+    /// Sets the answer for a given price pair by a provider
+    pub fn set_price(&mut self, pair: String, price: U128) {
+        let mut entry = self.pairs.get(&pair).expect("pair does not exist");
+        entry.last_update = env::block_timestamp();
+        entry.price = price;
+        self.pairs.insert(&pair, &entry);
+    }
+
+
+
+}
+
 
 
 /// Public contract methods
@@ -56,25 +84,20 @@ impl FPOContract {
     pub fn create_pair(&mut self, pair: String, decimals: u16, initial_price: U128, signers: Vec<PublicKey>) {
         self.assert_admin();
         let initial_storage_usage = env::storage_usage();
-        let mut provider = self
-            .providers
-            .get(&env::signer_account_pk())
-            .unwrap_or_else(Provider::new);
-
-        let pair_name = format!("{}", pair);
+        // make sure the pair wasn't created before
         assert!(
-            provider.pairs.get(&pair_name).is_none(),
+            self.pairs.get(&pair).is_none(),
             "pair already exists"
         );
+
         let mut price_entry = PriceEntry::new(initial_price, decimals, env::block_timestamp());
         price_entry.signers.clone_from(&signers);
-        log!("SIGNERS: {:?}", price_entry.signers);
-        provider.pairs.insert(
-            &pair_name,
+        // price_entry.signers.extend(signers);
+
+        self.pairs.insert(
+            &pair,
             &price_entry
         );
-
-        self.providers.insert(&env::signer_account_pk(), &provider);
 
         // check for storage deposit
         let storage_cost =
@@ -89,10 +112,12 @@ impl FPOContract {
     /// Sets the price for a given price pair by a provider
     #[payable]
     pub fn push_data(&mut self, pair: String, price: U128) {
-        let mut provider = self.get_provider_expect(&env::signer_account_pk());
-        let pair_name = format!("{}", pair);
-        provider.set_price(pair_name, price, env::block_timestamp());
-        // self.providers.insert(&env::signer_account_pk(), &provider);
+        // assert signer
+        let entry = self.pairs.get(&pair).expect("Pair doesn't exist");
+        assert!(entry.signers.contains(&env::signer_account_pk()));
+        // update priceentry
+        self.set_price(pair, price);
+
     }
 
     #[payable]
@@ -102,16 +127,13 @@ impl FPOContract {
         signers_pks: Vec<PublicKey>,
         pair: String,
         prices: Vec<U128>,
-        provider: PublicKey
     ) {
         assert_eq!(signatures.len(), prices.len());
         assert_eq!(signatures.len(), signers_pks.len());
 
-        let mut provider = self.get_provider_expect(&provider);
-        let pair_name = format!("{}", pair);
-
+        let entry = self.pairs.get(&pair).expect("Pair doesn't exist");
         for (index, signature) in signatures.iter().enumerate() {
-            assert!(provider.pairs.get(&pair_name).unwrap().signers.contains(&signers_pks[index]), "Signer doesnt exist");
+            assert!(entry.signers.contains(&signers_pks[index]), "Signer doesnt exist");
 
             let message = format!("{}:{:?}", pair, U128::from(prices[index]));
             let data: &[u8] = message.as_bytes();
@@ -123,56 +145,49 @@ impl FPOContract {
                 ed25519_dalek::PublicKey::from_bytes(&signers_pks[index].as_bytes()[1..]).unwrap();
 
             assert!(public_key.verify(data, &sig).is_ok(), "Couldn't verify signature");
+            // assert ascending order
+            if index < prices.len() - 1 {
+                assert!(u128::from(prices[index]) < u128::from(prices[index + 1]), "Prices not sorted");
+            }
         }
 
         log!("VERIFIES*********");
-        // Calc median 
-        // prices.sort();
-        log!("SORTED PRICES: {:?}", prices);
-        let price = prices[prices.len()/2];
-        provider.set_price(
-            pair_name,
+        let price;
+        if prices.len() % 2 == 0 {
+            price = (u128::from(prices[(prices.len() / 2) - 1]) + u128::from(prices[prices.len() / 2])) / 2;
+        } else {
+            price = u128::from(prices[prices.len() / 2]);
+        }
+        self.set_price(
+            pair,
             U128::from(price),
-            env::block_timestamp(),
         );
     }
 
+    
+
     /// Returns all data associated with a price pair by a provider
-    pub fn get_entry(&self, pair: String, provider: PublicKey) -> Option<PriceEntry> {
-        let pair_name = format!("{}", pair);
-        let provider = self.get_provider_option(&provider);
-        match provider {
-            Some(provider) => provider.get_entry_option(&pair_name),
+    pub fn get_entry(&self, pair: String) -> Option<PriceEntry> {
+        let entry = self.get_entry_option(&pair);
+        match entry {
+            Some(_) => self.get_entry_option(&pair),
             None => None,
         }
     }
 
     /// Returns only the price of a price pair by a provider
-    pub fn get_price(&self, pair: String, provider: &PublicKey) -> Option<U128> {
-        let pair_name = format!("{}", pair);
-        let provider = self.get_provider_option(provider);
-        match provider {
-            Some(provider) => provider
-                .get_entry_option(&pair_name)
-                .map(|entry| entry.price),
-            None => None,
-        }
+    pub fn get_price(&self, pair: String) -> Option<U128> {
+        self.get_entry_option(&pair).map(|entry| entry.price)
+        
     }
 
     /// Returns all the data associated with multiple price pairs by associated providers
-    pub fn get_prices(&self, pairs: Vec<String>, providers: Vec<PublicKey>) -> Vec<Option<U128>> {
-        assert_eq!(
-            pairs.len(),
-            providers.len(),
-            "pairs and provider should be of equal length"
-        );
-
+    pub fn get_prices(&self, pairs: Vec<String>) -> Vec<Option<U128>> {
+       
         let mut result = vec![];
-        for (i, provider) in providers.iter().enumerate() {
-            let pair_name = format!("{}", pairs[i]);
+        for pair in pairs.iter(){
             result.push(
-                self.get_provider_expect(provider)
-                    .get_entry_option(&pair_name)
+                self.get_entry_option(pair)
                     .map(|entry| entry.price),
             );
         }
@@ -180,216 +195,205 @@ impl FPOContract {
     }
 
     /// Checks if a given price pair exists
-    pub fn pair_exists(&self, pair: String, provider: PublicKey) -> bool {
-        let pair_name = format!("{}", pair);
-        self.get_provider_expect(&provider)
-            .pairs
-            .get(&pair_name)
-            .is_some()
+    pub fn pair_exists(&self, pair: String) -> bool {
+        self.get_entry_option(&pair).is_some()
     }
 }
 
-// #[cfg(test)]
-// mod tests {
+#[cfg(test)]
+mod tests {
 
-//     use near_sdk::test_utils::VMContextBuilder;
-//     use near_sdk::testing_env;
+    use near_sdk::test_utils::VMContextBuilder;
+    use near_sdk::testing_env;
 
-//     use super::*;
+    use super::*;
 
-//     fn alice() -> AccountId {
-//         "alice.near".parse().unwrap()
-//     }
-//     fn bob() -> AccountId {
-//         "bob.near".parse().unwrap()
-//     }
-//     fn bobpk() -> PublicKey {
-//         PublicKey::from(
-//             "Eg2jtsiMrprn7zgKKUk79qM1hWhANsFyE6JSX4txLEuy"
-//                 .parse()
-//                 .unwrap(),
-//         )
-//     }
-//     fn alicepk() -> PublicKey {
-//         PublicKey::from(
-//             "HghiythFFPjVXwc9BLNi8uqFmfQc1DWFrJQ4nE6ANo7R"
-//                 .parse()
-//                 .unwrap(),
-//         )
-//     }
+    fn alice() -> AccountId {
+        "alice.near".parse().unwrap()
+    }
+    fn bob() -> AccountId {
+        "bob.near".parse().unwrap()
+    }
+    fn bobpk() -> PublicKey {
+        PublicKey::from(
+            "Eg2jtsiMrprn7zgKKUk79qM1hWhANsFyE6JSX4txLEuy"
+                .parse()
+                .unwrap(),
+        )
+    }
+    fn alicepk() -> PublicKey {
+        PublicKey::from(
+            "HghiythFFPjVXwc9BLNi8uqFmfQc1DWFrJQ4nE6ANo7R"
+                .parse()
+                .unwrap(),
+        )
+    }
 
-//     fn get_context(
-//         predecessor_account_id: AccountId,
-//         // current_account_id: AccountId,
-//         signer_pk: PublicKey,
-//     ) -> VMContextBuilder {
-//         let mut builder = VMContextBuilder::new();
-//         builder
-//             // .current_account_id(current_account_id.clone())
-//             // .signer_account_id("robert.testnet".parse().unwrap())
-//             .predecessor_account_id(predecessor_account_id.clone())
-//             .signer_account_pk(signer_pk)
-//             .attached_deposit(STORAGE_COST);
-//         builder
-//     }
+    fn get_context(
+        predecessor_account_id: AccountId,
+        // current_account_id: AccountId,
+        signer_pk: PublicKey,
+    ) -> VMContextBuilder {
+        let mut builder = VMContextBuilder::new();
+        builder
+            // .current_account_id(current_account_id.clone())
+            // .signer_account_id("robert.testnet".parse().unwrap())
+            .predecessor_account_id(predecessor_account_id.clone())
+            .signer_account_pk(signer_pk)
+            .attached_deposit(STORAGE_COST);
+        builder
+    }
 
-//     // DOESNT PANIC!!!
-//     // #[should_panic]
-//     // #[test]
-//     // fn pair_name_too_long() {
-//     //     let context = get_context(alice(), alicepk());
-//     //     testing_env!(context.build());
-//     //     let mut fpo_contract = FPOContract::new(alice());
-//     //     fpo_contract.create_pair(
-//     //         "1234567890123".to_string(),
-//     //         u16::max_value(),
-//     //         U128(u128::max_value()),
-//     //     );
-//     // }
+    // DOESNT PANIC!!!
+    // #[should_panic]
+    // #[test]
+    // fn pair_name_too_long() {
+    //     let context = get_context(alice(), alicepk());
+    //     testing_env!(context.build());
+    //     let mut fpo_contract = FPOContract::new(alice());
+    //     fpo_contract.create_pair(
+    //         "1234567890123".to_string(),
+    //         u16::max_value(),
+    //         U128(u128::max_value()),
+    //     );
+    // }
 
-//     #[test]
-//     fn measure_storage_cost() {
-//         let context = get_context(alice(), alicepk());
-//         testing_env!(context.build());
-//         let mut fpo_contract = FPOContract::new(alice());
+    #[test]
+    fn measure_storage_cost() {
+        let context = get_context(alice(), alicepk());
+        testing_env!(context.build());
+        let mut fpo_contract = FPOContract::new(alice());
 
-//         let storage_used_before = env::storage_usage();
-//         fpo_contract.create_pair(
-//             "123456789012".to_string(),
-//             u16::max_value(),
-//             U128(u128::max_value()),
-//             vec![alicepk()]
-//         );
+        let storage_used_before = env::storage_usage();
+        fpo_contract.create_pair(
+            "123456789012".to_string(),
+            u16::max_value(),
+            U128(u128::max_value()),
+            vec![alicepk()]
+        );
 
-//         let storage_used_after = env::storage_usage();
-//         assert_eq!(storage_used_after - storage_used_before, 350); // was 170
-//     }
+        let storage_used_after = env::storage_usage();
+        assert_eq!(storage_used_after - storage_used_before, 124); // was 170, 350
+    }
 
-//     #[test]
-//     fn create_pair() {
-//         let context = get_context(alice(), alicepk());
-//         testing_env!(context.build());
-//         let mut fpo_contract = FPOContract::new(alice());
-//         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500), vec![alicepk()]);
-//         assert_eq!(
-//             true,
-//             fpo_contract.pair_exists("ETH/USD".to_string(), env::signer_account_pk())
-//         );
-//     }
+    #[test]
+    fn create_pair() {
+        let context = get_context(alice(), alicepk());
+        testing_env!(context.build());
+        let mut fpo_contract = FPOContract::new(alice());
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500), vec![alicepk()]);
+        assert_eq!(
+            true,
+            fpo_contract.pair_exists("ETH/USD".to_string())
+        );
+    }
 
-//     #[test]
-//     fn create_diff_pairs() {
-//         let context = get_context(alice(), alicepk());
-//         testing_env!(context.build());
-//         let mut fpo_contract = FPOContract::new(alice());
-//         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500), vec![alicepk()]);
-//         assert_eq!(
-//             true,
-//             fpo_contract.pair_exists("ETH/USD".to_string(), env::signer_account_pk())
-//         );
+    #[test]
+    fn create_diff_pairs() {
+        let context = get_context(alice(), alicepk());
+        testing_env!(context.build());
+        let mut fpo_contract = FPOContract::new(alice());
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500), vec![alicepk()]);
+        assert_eq!(
+            true,
+            fpo_contract.pair_exists("ETH/USD".to_string())
+        );
 
-//         fpo_contract.create_pair("BTC/USD".to_string(), 8, U128(42000), vec![alicepk()]);
-//         assert_eq!(
-//             true,
-//             fpo_contract.pair_exists("BTC/USD".to_string(), env::signer_account_pk())
-//         );
+        fpo_contract.create_pair("BTC/USD".to_string(), 8, U128(42000), vec![alicepk()]);
+        assert_eq!(
+            true,
+            fpo_contract.pair_exists("BTC/USD".to_string())
+        );
 
-//         assert_eq!(
-//             vec![U128(2500), U128(42000)],
-//             fpo_contract
-//                 .get_prices(
-//                     vec!["ETH/USD".to_string().to_string(), "BTC/USD".to_string()],
-//                     vec![env::signer_account_pk(), env::signer_account_pk()]
-//                 )
-//                 .into_iter()
-//                 .map(|entry| entry.unwrap())
-//                 .collect::<Vec<U128>>()
-//         );
-//     }
+        assert_eq!(
+            vec![U128(2500), U128(42000)],
+            fpo_contract
+                .get_prices(
+                    vec!["ETH/USD".to_string().to_string(), "BTC/USD".to_string()],
+                )
+                .into_iter()
+                .map(|entry| entry.unwrap())
+                .collect::<Vec<U128>>()
+        );
+    }
 
-//     #[test]
-//     #[should_panic]
-//     fn create_same_pair() {
-//         let context = get_context(alice(), alicepk());
-//         testing_env!(context.build());
-//         let mut fpo_contract = FPOContract::new(alice());
-//         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500), vec![alicepk()]);
-//         assert_eq!(
-//             true,
-//             fpo_contract.pair_exists("ETH/USD".to_string(), env::signer_account_pk())
-//         );
+    #[test]
+    #[should_panic]
+    fn create_same_pair() {
+        let context = get_context(alice(), alicepk());
+        testing_env!(context.build());
+        let mut fpo_contract = FPOContract::new(alice());
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500), vec![alicepk()]);
+        assert_eq!(
+            true,
+            fpo_contract.pair_exists("ETH/USD".to_string())
+        );
 
-//         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500), vec![alicepk()]);
-//     }
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500), vec![alicepk()]);
+    }
 
-//     #[test]
-//     fn push_data() {
-//         let context = get_context(alice(), alicepk());
-//         testing_env!(context.build());
-//         let mut fpo_contract = FPOContract::new(alice());
-//         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500), vec![alicepk()]);
-//         assert_eq!(
-//             U128(2500),
-//             fpo_contract
-//                 .get_entry("ETH/USD".to_string(), env::signer_account_pk())
-//                 .unwrap()
-//                 .price
-//         );
+    #[test]
+    fn push_data() {
+        let context = get_context(alice(), alicepk());
+        testing_env!(context.build());
+        let mut fpo_contract = FPOContract::new(alice());
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500), vec![alicepk()]);
+        assert_eq!(
+            U128(2500),
+            fpo_contract
+                .get_entry("ETH/USD".to_string())
+                .unwrap()
+                .price
+        );
 
-//         fpo_contract.push_data("ETH/USD".to_string(), U128(3000));
+        fpo_contract.push_data("ETH/USD".to_string(), U128(3000));
 
-//         assert_eq!(
-//             U128(3000),
-//             fpo_contract
-//                 .get_entry("ETH/USD".to_string(), env::signer_account_pk())
-//                 .unwrap()
-//                 .price
-//         );
-//     }
+        assert_eq!(
+            U128(3000),
+            fpo_contract
+                .get_entry("ETH/USD".to_string())
+                .unwrap()
+                .price
+        );
+    }
 
-//     #[test]
-//     fn push_data_multiple_providers() {
-//         let mut context = get_context(alice(), alicepk());
-//         testing_env!(context.build());
+    #[test]
+    fn push_data_multiple_providers() {
+        let mut context = get_context(alice(), alicepk());
+        testing_env!(context.build());
 
-//         let mut fpo_contract = FPOContract::new(alice());
-//         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500), vec![alicepk()]);
-//         assert_eq!(
-//             U128(2500),
-//             fpo_contract
-//                 .get_entry("ETH/USD".to_string(), env::signer_account_pk())
-//                 .unwrap()
-//                 .price
-//         );
+        let mut fpo_contract = FPOContract::new(alice());
+        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500), vec![alicepk(), bobpk()]);
+        assert_eq!(
+            U128(2500),
+            fpo_contract
+                .get_entry("ETH/USD".to_string())
+                .unwrap()
+                .price
+        );
 
-//         // switch to bob as signer
-//         context = get_context(bob(), bobpk());
-//         testing_env!(context.build());
+        fpo_contract.push_data("ETH/USD".to_string(), U128(3000));
 
-//         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2700), vec![bobpk()]);
-//         assert_eq!(
-//             U128(2700),
-//             fpo_contract
-//                 .get_entry("ETH/USD".to_string(), env::signer_account_pk())
-//                 .unwrap()
-//                 .price
-//         );
-//         assert_eq!(
-//             U128(2500),
-//             fpo_contract
-//                 .get_entry("ETH/USD".to_string(), alicepk())
-//                 .unwrap()
-//                 .price
-//         );
+        assert_eq!(
+            U128(3000),
+            fpo_contract
+                .get_entry("ETH/USD".to_string())
+                .unwrap()
+                .price
+        );
 
-//         fpo_contract.push_data("ETH/USD".to_string(), U128(3000));
+        // switch to bob as signer
+        context = get_context(bob(), bobpk());
+        testing_env!(context.build());
 
-//         assert_eq!(
-//             U128(3000),
-//             fpo_contract
-//                 .get_entry("ETH/USD".to_string(), env::signer_account_pk())
-//                 .unwrap()
-//                 .price
-//         );
-//     }
-// }
+        fpo_contract.push_data("ETH/USD".to_string(), U128(5000));
+
+        assert_eq!(
+            U128(5000),
+            fpo_contract
+                .get_entry("ETH/USD".to_string())
+                .unwrap()
+                .price
+        );
+    }
+}

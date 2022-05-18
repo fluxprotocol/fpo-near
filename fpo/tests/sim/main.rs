@@ -14,7 +14,6 @@ near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
 
 pub const DEFAULT_GAS: u64 = 300_000_000_000_000;
 pub const STORAGE_COST: u128 = 5_700_000_000_000_000_000_000; // was 1_700_000_000_000_000_000_000
-const REGISTRY_COST: u128 = 2_810_000_000_000_000_000_000; // was 1_810_000_000_000_000_000_000
 
 fn init() -> (UserAccount, ContractAccount<FPOContractContract>) {
     let root: UserAccount = init_simulator(None);
@@ -30,11 +29,153 @@ fn init() -> (UserAccount, ContractAccount<FPOContractContract>) {
 }
 
 #[test]
+fn simulate_add_rm_signer() {
+    let (root, fpo) = init();
+
+    call!(root, fpo.new(root.account_id())).assert_success();
+
+    let provider0 = root.create_user("provider0".parse().unwrap(), to_yocto("1000000"));
+    let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
+    let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
+    let provider3 = root.create_user("provider3".parse().unwrap(), to_yocto("1000000"));
+
+    let provider0_pk: PublicKey = provider0.signer.public_key.to_string().parse().unwrap();
+    let provider1_pk: PublicKey = provider1.signer.public_key.to_string().parse().unwrap();
+    let provider2_pk: PublicKey = provider2.signer.public_key.to_string().parse().unwrap();
+    let provider3_pk: PublicKey = provider3.signer.public_key.to_string().parse().unwrap();
+
+
+
+    // let admin create a price pair with signers, check if it exists, and get the value
+    let tx = root.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000), vec![provider0_pk.clone(), provider1_pk.clone(), provider2_pk.clone()]])
+            .to_string()
+            .into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST, // attached deposit
+    ).assert_success();
+    log!("**{:?}", tx);
+    call!(
+        root,
+        fpo.pair_exists("ETH/USD".to_string())
+    )
+    .assert_success();
+
+    let price_entry = call!(root, fpo.get_entry("ETH/USD".to_string()));
+    println!(
+        "Returned Price: {:?}",
+        &price_entry.unwrap_json_value()["price"].to_owned()
+    );
+    let message = format!("{}:{:?}", "ETH/USD", U128(1000));
+    let data: &[u8] = message.as_bytes();
+    let p0_sig = provider0.signer.sign(data);
+
+    let message = format!("{}:{:?}", "ETH/USD", U128(2000));
+    let data: &[u8] = message.as_bytes();
+    let p1_sig = provider1.signer.sign(data);
+
+    let message = format!("{}:{:?}", "ETH/USD", U128(3000));
+    let data: &[u8] = message.as_bytes();
+    let p2_sig = provider2.signer.sign(data);
+
+    let message = format!("{}:{:?}", "ETH/USD", U128(4000));
+    let data: &[u8] = message.as_bytes();
+    let p3_sig = provider3.signer.sign(data);
+
+
+    let p0_sig_vec = p0_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
+
+    let p1_sig_vec = p1_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
+    let p2_sig_vec = p2_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
+
+    let p3_sig_vec = p3_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
+
+
+    let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
+    // try pushing data with invalid signer provider3
+    let tx = call!(
+        bob,
+        fpo.push_data_signed(
+            vec![p0_sig_vec[1..].to_vec(), p1_sig_vec[1..].to_vec(), p2_sig_vec[1..].to_vec(), p3_sig_vec[1..].to_vec()],
+            vec![provider0_pk.clone(), provider1_pk.clone(), provider2_pk.clone(), provider3_pk.clone()],
+            "ETH/USD".to_string(),
+            // vec![1000, 2000, 3000, 4000],
+            vec![U128(1000), U128(2000), U128(3000), U128(4000)]
+        )
+    );
+    // assert error
+    assert!(!tx.is_ok());
+    println!("----tx {:?}", tx.status() );
+    let tx = call!(
+        root,
+        fpo.add_signers(
+            vec![provider3_pk.clone()], "ETH/USD".to_string()
+        )
+    ).assert_success();
+
+    println!("----tx {:?}", tx);
+    // push data after adding provider3 as signer 
+    let tx = call!(
+        bob,
+        fpo.push_data_signed(
+            vec![p0_sig_vec[1..].to_vec(), p1_sig_vec[1..].to_vec(), p2_sig_vec[1..].to_vec(), p3_sig_vec[1..].to_vec()],
+            vec![provider0_pk.clone(), provider1_pk.clone(), provider2_pk.clone(), provider3_pk.clone()],
+            "ETH/USD".to_string(),
+            // vec![1000, 2000, 3000, 4000],
+            vec![U128(1000), U128(2000), U128(3000), U128(4000)]
+        )
+    ).assert_success();
+    println!("----tx {:?}", tx);
+
+
+    // get the updated data
+    let price_entry = call!(root, fpo.get_entry("ETH/USD".to_string()));
+
+    // output and check the data
+    println!(
+        "Returned Price: {:?}",
+        &price_entry.unwrap_json_value()["price"]
+    );
+    debug_assert_eq!(
+        &price_entry.unwrap_json_value()["price"].to_owned(),
+        &"2500".to_string()
+    );
+
+
+    let tx = call!(
+        root,
+        fpo.rm_signers(
+            vec![provider3_pk.clone()], "ETH/USD".to_string()
+        )
+    ).assert_success();
+
+    println!("----tx {:?}", tx);
+
+    // try pushing data with invalid signer provider3
+    let tx = call!(
+        bob,
+        fpo.push_data_signed(
+            vec![p0_sig_vec[1..].to_vec(), p1_sig_vec[1..].to_vec(), p2_sig_vec[1..].to_vec(), p3_sig_vec[1..].to_vec()],
+            vec![provider0_pk.clone(), provider1_pk.clone(), provider2_pk.clone(), provider3_pk.clone()],
+            "ETH/USD".to_string(),
+            // vec![1000, 2000, 3000, 4000],
+            vec![U128(1000), U128(2000), U128(3000), U128(4000)]
+        )
+    );
+    // assert error
+    assert!(!tx.is_ok());
+    println!("----tx {:?}", tx.status() );
+
+
+}
+
+#[test]
 fn simulate_push_data_signed() {
     let (root, fpo) = init();
 
     call!(root, fpo.new(root.account_id())).assert_success();
-    let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
 
     let provider0 = root.create_user("provider0".parse().unwrap(), to_yocto("1000000"));
     let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
@@ -73,11 +214,11 @@ fn simulate_push_data_signed() {
     log!("**{:?}", tx);
     call!(
         root,
-        fpo.pair_exists("ETH/USD".to_string(), root_pk.clone())
+        fpo.pair_exists("ETH/USD".to_string())
     )
     .assert_success();
 
-    let price_entry = call!(root, fpo.get_entry("ETH/USD".to_string(), root_pk.clone()));
+    let price_entry = call!(root, fpo.get_entry("ETH/USD".to_string()));
     println!(
         "Returned Price: {:?}",
         &price_entry.unwrap_json_value()["price"].to_owned()
@@ -108,7 +249,6 @@ fn simulate_push_data_signed() {
 
 
     let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
-    log!("jfnglkdjsfbgldskffffffffff");
     // try pushing data with invalid signer provider3
     let tx = call!(
         bob,
@@ -117,8 +257,7 @@ fn simulate_push_data_signed() {
             vec![provider0_pk.clone(), provider1_pk.clone(), provider2_pk.clone(), provider3_pk.clone()],
             "ETH/USD".to_string(),
             // vec![1000, 2000, 3000, 4000],
-            vec![U128(1000), U128(2000), U128(3000), U128(4000)],
-            root_pk.clone()
+            vec![U128(1000), U128(2000), U128(3000), U128(4000)]
         )
     );
     // assert error
@@ -134,15 +273,14 @@ fn simulate_push_data_signed() {
             vec![provider0_pk.clone(), provider1_pk.clone(), provider2_pk.clone()],
             "ETH/USD".to_string(),
             // vec![1000, 2000, 3000],
-            vec![U128(1000), U128(2000), U128(3000)],
-            root_pk.clone()
+            vec![U128(1000), U128(2000), U128(3000)]
         )
     ).assert_success();
 
     println!("----tx {:?}", tx);
 
     // get the updated data
-    let price_entry = call!(root, fpo.get_entry("ETH/USD".to_string(), root_pk));
+    let price_entry = call!(root, fpo.get_entry("ETH/USD".to_string()));
 
     // output and check the data
     println!(
@@ -155,642 +293,225 @@ fn simulate_push_data_signed() {
     );
 }
 
-// #[test]
-// fn simulate_create_pair() {
-//     let (root, fpo) = init();
-//     call!(root, fpo.new("admin".parse().unwrap())).assert_success();
-//     let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
-
-//     // create a price pair, check if it exists, and get the value
-//     let tx = root.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["ETH/USD".to_string(), 8, U128(2000), vec![root_pk.clone()]])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-//     println!("----tx {:?}", tx);
-
-//     call!(
-//         root,
-//         fpo.pair_exists("ETH/USD".to_string(), root_pk.clone())
-//     )
-//     .assert_success();
-//     let price_entry = call!(root, fpo.get_entry("ETH/USD".to_string(), root_pk.clone()));
-
-//     // output and check the data
-//     println!(
-//         "Returned Price: {:?}",
-//         &price_entry.unwrap_json_value()["price"]
-//     );
-//     debug_assert_eq!(
-//         &price_entry.unwrap_json_value()["price"].to_owned(),
-//         &"2000".to_string()
-//     );
-// }
-
-// #[test]
-// fn simulate_create_smae_pair() {
-//     let (root, fpo) = init();
-//     call!(root, fpo.new("admin".parse().unwrap())).assert_success();
-//     // let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
-
-//     // create a price pair
-//     root.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["ETH/USD".to_string(), 8, U128(2000)])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-
-//     let err = call!(root, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000))).promise_errors();
-//     println!("ERROR: {:?}", err);
-// }
-
-// #[test]
-// fn simulate_push_data() {
-//     let (root, fpo) = init();
-
-//     call!(root, fpo.new("admin".parse().unwrap())).assert_success();
-//     let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
-
-//     // create a price pair, check if it exists, and get the value
-//     root.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["ETH/USD".to_string(), 8, U128(2000)])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-//     call!(
-//         root,
-//         fpo.pair_exists("ETH/USD".to_string(), root_pk.clone())
-//     )
-//     .assert_success();
-//     let price_entry = call!(root, fpo.get_entry("ETH/USD".to_string(), root_pk.clone()));
-//     println!(
-//         "Returned Price: {:?}",
-//         &price_entry.unwrap_json_value()["price"].to_owned()
-//     );
-
-//     // update the data
-//     call!(root, fpo.push_data("ETH/USD".to_string(), 4000)).assert_success();
-
-//     // get the updated data
-//     let price_entry = call!(root, fpo.get_entry("ETH/USD".to_string(), root_pk.clone()));
-
-//     // output and check the data
-//     println!(
-//         "Returned Price: {:?}",
-//         &price_entry.unwrap_json_value()["price"]
-//     );
-//     debug_assert_eq!(
-//         &price_entry.unwrap_json_value()["price"].to_owned(),
-//         &"4000".to_string()
-//     );
-// }
-
-// #[test]
-// fn simulate_different_providers() {
-//     let (root, fpo) = init();
-//     call!(root, fpo.new("admin".parse().unwrap())).assert_success();
-//     let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
-
-//     // create a price pair from root
-//     root.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["ETH/USD".to_string(), 8, U128(2000)])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-//     call!(
-//         root,
-//         fpo.pair_exists("ETH/USD".to_string(), root_pk.clone())
-//     )
-//     .assert_success();
-
-//     // create a price pair from bob
-//     let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
-//     let bob_pk: PublicKey = bob.signer.public_key.to_string().parse().unwrap();
-
-//     bob.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["ETH/USD".to_string(), 8, 4000])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-//     call!(bob, fpo.pair_exists("ETH/USD".to_string(), bob_pk.clone())).assert_success();
-
-//     // output and check bob's data
-//     let price_entry = call!(bob, fpo.get_entry("ETH/USD".to_string(), bob_pk.clone()));
-//     println!(
-//         "Returned Price: {:?}",
-//         &price_entry.unwrap_json_value()["price"].to_owned()
-//     );
-//     debug_assert_eq!(
-//         &price_entry.unwrap_json_value()["price"].to_owned(),
-//         &"4000".to_string()
-//     );
-
-//     // output and check root's data
-//     let price_entry = call!(root, fpo.get_entry("ETH/USD".to_string(), root_pk.clone()));
-//     println!(
-//         "Returned Price: {:?}",
-//         &price_entry.unwrap_json_value()["price"].to_owned()
-//     );
-//     debug_assert_eq!(
-//         &price_entry.unwrap_json_value()["price"].to_owned(),
-//         &"2000".to_string()
-//     );
-// }
-
-// #[test]
-// fn simulate_different_pairs() {
-//     let (root, fpo) = init();
-//     call!(root, fpo.new("admin".parse().unwrap())).assert_success();
-//     // let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
-
-//     // create a price pair from bob
-//     let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
-//     let bob_pk: PublicKey = bob.signer.public_key.to_string().parse().unwrap();
-
-//     bob.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["ETH / USD".to_string(), 8, 4000])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-//     call!(
-//         bob,
-//         fpo.pair_exists("ETH / USD".to_string(), bob_pk.clone())
-//     )
-//     .assert_success();
-
-//     // create another price pair from bob
-//     bob.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["BTC / USD".to_string(), 8, U128(45000)])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-//     call!(
-//         bob,
-//         fpo.pair_exists("BTC / USD".to_string(), bob_pk.clone())
-//     )
-//     .assert_success();
-
-//     // output and check bob's data
-//     let price_entry = call!(bob, fpo.get_entry("ETH / USD".to_string(), bob_pk.clone()));
-//     println!(
-//         "Returned Price: {:?}",
-//         &price_entry.unwrap_json_value()["price"].to_owned()
-//     );
-//     debug_assert_eq!(
-//         &price_entry.unwrap_json_value()["price"].to_owned(),
-//         &"4000".to_string()
-//     );
-
-//     // output and check bob's data
-//     let price_entry = call!(bob, fpo.get_entry("BTC / USD".to_string(), bob_pk.clone()));
-//     println!(
-//         "Returned Price: {:?}",
-//         &price_entry.unwrap_json_value()["price"].to_owned()
-//     );
-//     debug_assert_eq!(
-//         &price_entry.unwrap_json_value()["price"].to_owned(),
-//         &"45000".to_string()
-//     );
-// }
-
-// #[test]
-// fn simulate_agg_avg() {
-//     let (root, fpo) = init();
-//     call!(root, fpo.new("admin".parse().unwrap())).assert_success();
-//     let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
-
-//     // create a price pair from root
-//     root.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["ETH/USD".to_string(), 8, U128(2000)])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-
-//     // create a price pair from bob
-//     let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
-//     let bob_pk: PublicKey = bob.signer.public_key.to_string().parse().unwrap();
-
-//     bob.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["ETH/USD".to_string(), 8, U128(2000)])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-
-//     // create a price pair from alice
-//     let alice = root.create_user("alice".parse().unwrap(), to_yocto("1000000"));
-//     let alice_pk: PublicKey = alice.signer.public_key.to_string().parse().unwrap();
-
-//     alice.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["ETH/USD".to_string(), 8, U128(3000)])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-
-//     // create a price pair from carol
-//     let carol = root.create_user("carol".parse().unwrap(), to_yocto("1000000"));
-//     let carol_pk: PublicKey = carol.signer.public_key.to_string().parse().unwrap();
-
-//     carol.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["ETH/USD".to_string(), 8, U128(3000)])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-
-//     // find the average of the four
-//     let pairs = vec![
-//         "ETH/USD".to_string(),
-//         "ETH/USD".to_string(),
-//         "ETH/USD".to_string(),
-//         "ETH/USD".to_string(),
-//     ];
-//     let avg = call!(
-//         bob,
-//         fpo.aggregate_avg(pairs, vec![root_pk, bob_pk, alice_pk, carol_pk], 0)
-//     );
-
-//     // output and check the data
-//     println!("Returned AVG: {:?}", &avg.unwrap_json_value());
-//     debug_assert_eq!(&avg.unwrap_json_value(), &"2500".to_string());
-// }
-
-// #[test]
-// fn simulate_agg_median() {
-//     let (root, fpo) = init();
-//     call!(root, fpo.new("admin".parse().unwrap())).assert_success();
-//     let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
-
-//     // create a price pair from root
-//     root.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["ETH/USD".to_string(), 8, U128(2000)])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-
-//     // create a price pair from bob
-//     let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
-//     let bob_pk: PublicKey = bob.signer.public_key.to_string().parse().unwrap();
-
-//     bob.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["ETH/USD".to_string(), 8, 4000])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-
-//     // create a price pair from alice
-//     let alice = root.create_user("alice".parse().unwrap(), to_yocto("1000000"));
-//     let alice_pk: PublicKey = alice.signer.public_key.to_string().parse().unwrap();
-
-//     alice.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["ETH/USD".to_string(), 8, 4000])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-
-//     // create a price pair from carol
-//     let carol = root.create_user("carol".parse().unwrap(), to_yocto("1000000"));
-//     let carol_pk: PublicKey = carol.signer.public_key.to_string().parse().unwrap();
-
-//     carol.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["ETH/USD".to_string(), 8, U128(2000)])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-
-//     // find the median of the four
-//     let pairs = vec![
-//         "ETH/USD".to_string(),
-//         "ETH/USD".to_string(),
-//         "ETH/USD".to_string(),
-//         "ETH/USD".to_string(),
-//     ];
-//     let median = call!(
-//         bob,
-//         fpo.aggregate_median(pairs, vec![root_pk, bob_pk, alice_pk, carol_pk], 0)
-//     );
-
-//     // output and check the data
-//     println!("Returned MEDIAN: {:?}", &median.unwrap_json_value());
-//     debug_assert_eq!(&median.unwrap_json_value(), &"3000".to_string());
-// }
-
-// #[test]
-// fn simulate_agg_median_diff_ids() {
-//     let (root, fpo) = init();
-//     call!(root, fpo.new("admin".parse().unwrap())).assert_success();
-//     let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
-
-//     // create a price pair from root
-//     root.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["ETH-USD".to_string(), 8, U128(2000)])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-
-//     // create a price pair from bob
-//     let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
-//     let bob_pk: PublicKey = bob.signer.public_key.to_string().parse().unwrap();
-
-//     bob.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["ETH / USD".to_string(), 8, 4000])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-
-//     // create a price pair from alice
-//     let alice = root.create_user("alice".parse().unwrap(), to_yocto("1000000"));
-//     let alice_pk: PublicKey = alice.signer.public_key.to_string().parse().unwrap();
-
-//     alice.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["ETH/USD".to_string(), 8, 4000])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-
-//     // create a price pair from carol
-//     let carol = root.create_user("carol".parse().unwrap(), to_yocto("1000000"));
-//     let carol_pk: PublicKey = carol.signer.public_key.to_string().parse().unwrap();
-
-//     carol.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["ETH/USD".to_string(), 8, U128(2000)])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-
-//     // find the median of the four
-//     let pairs = vec![
-//         "ETH-USD".to_string(),
-//         "ETH / USD".to_string(),
-//         "ETH/USD".to_string(),
-//         "ETH/USD".to_string(),
-//     ];
-//     let median = call!(
-//         bob,
-//         fpo.aggregate_median(pairs, vec![root_pk, bob_pk, alice_pk, carol_pk], 0)
-//     );
-
-//     // output and check the data
-//     println!("Returned MEDIAN: {:?}", &median.unwrap_json_value());
-//     debug_assert_eq!(&median.unwrap_json_value(), &"3000".to_string());
-// }
-
-// #[test]
-// fn simulate_creating_registeries() {
-//     let (root, fpo) = init();
-//     call!(root, fpo.new("admin".parse().unwrap())).assert_success();
-//     let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
-
-//     // create pricepairs from root
-//     root.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["ETH/USD".to_string(), 8, U128(2500)])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-//     root.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["BTC/USD".to_string(), 8, U128(40000)])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-//     call!(
-//         root,
-//         fpo.pair_exists("ETH/USD".to_string(), root_pk.clone())
-//     )
-//     .assert_success();
-//     call!(
-//         root,
-//         fpo.pair_exists("BTC/USD".to_string(), root_pk.clone())
-//     )
-//     .assert_success();
-
-//     // create pricepairs from bob
-//     let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
-//     let bob_pk: PublicKey = bob.signer.public_key.to_string().parse().unwrap();
-
-//     bob.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["ETH/USD".to_string(), 8, U128(3000)])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-//     bob.call(
-//         fpo.account_id(),
-//         "create_pair",
-//         &json!(["BTC/USD".to_string(), 8, U128(30000)])
-//             .to_string()
-//             .into_bytes(),
-//         DEFAULT_GAS,
-//         STORAGE_COST, // attached deposit
-//     );
-//     call!(bob, fpo.pair_exists("ETH/USD".to_string(), bob_pk.clone())).assert_success();
-//     call!(bob, fpo.pair_exists("BTC/USD".to_string(), bob_pk.clone())).assert_success();
-
-//     // create a registery for root
-//     let tx = root.call(
-//         fpo.account_id(),
-//         "create_registry",
-//         &json!([
-//             vec![
-//                 vec!["ETH/USD".to_string(), "ETH/USD".to_string()],
-//                 vec!["BTC/USD".to_string(), "BTC/USD".to_string()],
-//             ],
-//             vec![
-//                 vec![root_pk.clone(), bob_pk.clone()],
-//                 vec![root_pk.clone(), bob_pk.clone()]
-//             ],
-//             0
-//         ])
-//         .to_string()
-//         .into_bytes(),
-//         DEFAULT_GAS,
-//         REGISTRY_COST, // attached deposit
-//     );
-//     log!("YESSSSSSSSSSSSS");
-//     println!("----tx {:?}", tx);
-
-//     // create a registery for bob
-//     bob.call(
-//         fpo.account_id(),
-//         "create_registry",
-//         &json!([
-//             vec![
-//                 vec!["ETH/USD".to_string(), "ETH/USD".to_string()],
-//                 vec!["BTC/USD".to_string(), "BTC/USD".to_string()],
-//             ],
-//             vec![
-//                 vec![root_pk.clone(), bob_pk.clone()],
-//                 vec![root_pk.clone(), bob_pk.clone()]
-//             ],
-//             0
-//         ])
-//         .to_string()
-//         .into_bytes(),
-//         DEFAULT_GAS,
-//         REGISTRY_COST, // attached deposit
-//     );
-
-//     // aggregate values from root's registery
-//     let aggregated = call!(root, fpo.registry_aggregate(root.account_id()));
-//     println!("----aggregated {:?}", aggregated);
-
-//     println!(
-//         "Returned aggregated values from root's registery: {:?}",
-//         &aggregated.unwrap_json_value().to_owned()
-//     );
-
-//     debug_assert_eq!(
-//         &aggregated.unwrap_json_value().to_owned(),
-//         &json!([&"2750".to_string(), &"35000".to_string()])
-//     );
-
-//     // aggregate values from bob's registery
-//     let aggregated = call!(bob, fpo.registry_aggregate(bob.account_id()));
-//     println!(
-//         "Returned aggregated values from bob's registery: {:?}",
-//         &aggregated.unwrap_json_value().to_owned()
-//     );
-
-//     debug_assert_eq!(
-//         &aggregated.unwrap_json_value().to_owned(),
-//         &json!([&"2750".to_string(), &"35000".to_string()])
-//     );
-
-//     // update root's ETH/USD pricefeed
-//     call!(root, fpo.push_data("ETH/USD".to_string(), 4000)).assert_success();
-
-//     // aggregate values from root's registery after updating
-//     let aggregated = call!(root, fpo.registry_aggregate(root.account_id()));
-//     println!(
-//         "Returned aggregated values from root's  registery: {:?}",
-//         &aggregated.unwrap_json_value().to_owned()
-//     );
-
-//     debug_assert_eq!(
-//         &aggregated.unwrap_json_value().to_owned(),
-//         &json!([&"3500".to_string(), &"35000".to_string()])
-//     );
-
-//     // aggregate values from bob's registery after updating
-//     let aggregated = call!(bob, fpo.registry_aggregate(bob.account_id()));
-//     println!(
-//         "Returned aggregated values from bob's registery: {:?}",
-//         &aggregated.unwrap_json_value().to_owned()
-//     );
-
-//     debug_assert_eq!(
-//         &aggregated.unwrap_json_value().to_owned(),
-//         &json!([&"3500".to_string(), &"35000".to_string()])
-//     );
-
-//     // update bob's BTC/USD pricefeed
-//     call!(bob, fpo.push_data("BTC/USD".to_string(), U128(50000))).assert_success();
-
-//     // aggregate values from root's registery after updating
-//     let aggregated = call!(root, fpo.registry_aggregate(root.account_id()));
-//     println!(
-//         "Returned aggregated values from root's  registery: {:?}",
-//         &aggregated.unwrap_json_value().to_owned()
-//     );
-
-//     debug_assert_eq!(
-//         &aggregated.unwrap_json_value().to_owned(),
-//         &json!([&"3500".to_string(), &"45000".to_string()])
-//     );
-
-//     // aggregate values from bob's registery after updating
-//     let aggregated = call!(bob, fpo.registry_aggregate(bob.account_id()));
-//     println!(
-//         "Returned aggregated values from bob's registery: {:?}",
-//         &aggregated.unwrap_json_value().to_owned()
-//     );
-
-//     debug_assert_eq!(
-//         &aggregated.unwrap_json_value().to_owned(),
-//         &json!([&"3500".to_string(), &"45000".to_string()])
-//     );
-// }
+#[test]
+fn simulate_create_pair() {
+    let (root, fpo) = init();
+    call!(root, fpo.new(root.account_id())).assert_success();
+    let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
+
+    // create a price pair, check if it exists, and get the value
+    let tx = root.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000), vec![root_pk.clone()]])
+            .to_string()
+            .into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST, // attached deposit
+    );
+    println!("----tx {:?}", tx);
+
+    call!(
+        root,
+        fpo.pair_exists("ETH/USD".to_string())
+    )
+    .assert_success();
+    let price_entry = call!(root, fpo.get_entry("ETH/USD".to_string()));
+
+    // output and check the data
+    println!(
+        "Returned Price: {:?}",
+        &price_entry.unwrap_json_value()["price"]
+    );
+    debug_assert_eq!(
+        &price_entry.unwrap_json_value()["price"].to_owned(),
+        &"2000".to_string()
+    );
+}
+
+#[test]
+fn simulate_create_same_pair() {
+    let (root, fpo) = init();
+    call!(root, fpo.new(root.account_id())).assert_success();
+    let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
+
+    // create a price pair
+    root.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000), vec![root_pk.clone()]])
+            .to_string()
+            .into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST, // attached deposit
+    );
+
+    let tx = call!(root, fpo.create_pair("ETH/USD".to_string(), 8, U128(2000), vec![root_pk.clone()]));
+    println!("tx: {:?}", tx);
+    assert!(!tx.is_ok())
+}
+
+#[test]
+fn simulate_push_data() {
+    let (root, fpo) = init();
+
+    call!(root, fpo.new(root.account_id())).assert_success();
+    let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
+
+    // create a price pair, check if it exists, and get the value
+    root.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000), vec![root_pk.clone()]])
+            .to_string()
+            .into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST, // attached deposit
+    );
+    call!(
+        root,
+        fpo.pair_exists("ETH/USD".to_string())
+    )
+    .assert_success();
+    let price_entry = call!(root, fpo.get_entry("ETH/USD".to_string()));
+    println!(
+        "Returned Price: {:?}",
+        &price_entry.unwrap_json_value()["price"].to_owned()
+    );
+
+    // update the data
+    call!(root, fpo.push_data("ETH/USD".to_string(), U128(4000))).assert_success();
+
+    // get the updated data
+    let price_entry = call!(root, fpo.get_entry("ETH/USD".to_string()));
+
+    // output and check the data
+    println!(
+        "Returned Price: {:?}",
+        &price_entry.unwrap_json_value()["price"]
+    );
+    debug_assert_eq!(
+        &price_entry.unwrap_json_value()["price"].to_owned(),
+        &"4000".to_string()
+    );
+}
+
+#[test]
+fn simulate_different_providers() {
+    let (root, fpo) = init();
+    call!(root, fpo.new(root.account_id())).assert_success();
+
+
+
+    let provider0 = root.create_user("provider0".parse().unwrap(), to_yocto("1000000"));
+    let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
+
+    let provider0_pk: PublicKey = provider0.signer.public_key.to_string().parse().unwrap();
+    let provider1_pk: PublicKey = provider1.signer.public_key.to_string().parse().unwrap();
+
+    // create a price pair from root
+    root.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH/USD".to_string(), 8, U128(2000), vec![provider0_pk.clone(), provider1_pk.clone()]])
+            .to_string()
+            .into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST, // attached deposit
+    );
+    call!(
+        root,
+        fpo.pair_exists("ETH/USD".to_string())
+    )
+    .assert_success();
+
+
+    // update the data
+    call!(provider0, fpo.push_data("ETH/USD".to_string(), U128(4000))).assert_success();
+
+    // get the updated data
+    let price_entry = call!(root, fpo.get_entry("ETH/USD".to_string()));
+
+    debug_assert_eq!(
+        &price_entry.unwrap_json_value()["price"].to_owned(),
+        &"4000".to_string()
+    );
+
+
+    // update the data
+    call!(provider1, fpo.push_data("ETH/USD".to_string(), U128(5000))).assert_success();
+
+    // get the updated data
+    let price_entry = call!(root, fpo.get_entry("ETH/USD".to_string()));
+
+    debug_assert_eq!(
+        &price_entry.unwrap_json_value()["price"].to_owned(),
+        &"5000".to_string()
+    );
+  
+}
+
+#[test]
+fn simulate_different_pairs() {
+    let (root, fpo) = init();
+    call!(root, fpo.new(root.account_id())).assert_success();
+    // let root_pk: PublicKey = root.signer.public_key.to_string().parse().unwrap();
+
+    // create a price pair from bob
+    let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
+    let bob_pk: PublicKey = bob.signer.public_key.to_string().parse().unwrap();
+
+    root.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["ETH / USD".to_string(), 8, U128(4000), vec![bob_pk.clone()]])
+            .to_string()
+            .into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST, // attached deposit
+    );
+    call!(
+        bob,
+        fpo.pair_exists("ETH / USD".to_string())
+    )
+    .assert_success();
+
+    // create another price pair from bob
+    root.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!(["BTC / USD".to_string(), 8, U128(45000), vec![bob_pk.clone()]])
+            .to_string()
+            .into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST, // attached deposit
+    );
+    call!(
+        bob,
+        fpo.pair_exists("BTC / USD".to_string())
+    )
+    .assert_success();
+
+    // output and check bob's data
+    let price_entry = call!(bob, fpo.get_entry("ETH / USD".to_string()));
+    println!(
+        "Returned Price: {:?}",
+        &price_entry.unwrap_json_value()["price"].to_owned()
+    );
+    debug_assert_eq!(
+        &price_entry.unwrap_json_value()["price"].to_owned(),
+        &"4000".to_string()
+    );
+
+    // output and check bob's data
+    let price_entry = call!(bob, fpo.get_entry("BTC / USD".to_string()));
+    println!(
+        "Returned Price: {:?}",
+        &price_entry.unwrap_json_value()["price"].to_owned()
+    );
+    debug_assert_eq!(
+        &price_entry.unwrap_json_value()["price"].to_owned(),
+        &"45000".to_string()
+    );
+}
+
