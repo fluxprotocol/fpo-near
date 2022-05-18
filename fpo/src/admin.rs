@@ -1,8 +1,11 @@
+use near_sdk::log;
+
 use crate::*;
 
 /// Private contract methods
 impl FPOContract {
     pub fn assert_admin(&self) {
+        log!("HIIII");
         assert_eq!(
             self.admin,
             env::predecessor_account_id(),
