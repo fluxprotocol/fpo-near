@@ -24,6 +24,13 @@ pub trait PriceConsumer {
         price_type: PriceType,
         results: Vec<Option<U128>>,
     );
+    fn on_registry_prices_received(
+        &self,
+        sender_id: AccountId,
+        pairs: Vec<String>,
+        results: Vec<Option<U128>>,
+        registry_owner: AccountId,
+    );
 
 }
 
@@ -67,6 +74,26 @@ impl FPOContract {
             receiver_id,
             ZERO_BALANCE,
             GAS_TO_SEND_PRICE * num_pairs.try_into().unwrap(),
+        )
+    }
+
+
+    /// Calls `registry_aggregate` and forwards the result to the price consumer
+    pub fn registry_aggregate_call(
+        &self,
+        registry_owner: AccountId,
+        receiver_id: AccountId,
+    ) -> Promise {
+        let registry = self.registries.get(&registry_owner).expect("No registry found");
+        let results = self.registry_aggregate_median(registry_owner.clone());
+        ext_price_consumer::on_registry_prices_received(
+            env::predecessor_account_id(),
+            registry.pairs,
+            results,
+            registry_owner,
+            receiver_id,
+            ZERO_BALANCE,
+            GAS_TO_SEND_PRICE,
         )
     }
 }

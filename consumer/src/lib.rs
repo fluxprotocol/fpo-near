@@ -36,6 +36,13 @@ pub struct PriceEntry {
     price_type: PriceType,
 }
 
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
+pub struct Registry {
+    pub pairs: Vec<String>,
+    pub results: Vec<Option<U128>>,
+    pub sender_id: AccountId,
+}
+
 
 
 #[near_bindgen]
@@ -43,6 +50,8 @@ pub struct PriceEntry {
 pub struct Consumer {
     oracle: AccountId,
     pairs: LookupMap<String, PriceEntry>, // maps:  AccountId => Provider
+    registries: LookupMap<AccountId, Registry>, // maps:  AccountId => Registry
+
 
 }
 
@@ -54,6 +63,8 @@ pub enum PriceType {
     Multiple,
 }
 
+
+
 #[near_bindgen]
 impl Consumer {
     #[init]
@@ -61,8 +72,34 @@ impl Consumer {
         Self {
             oracle,
             pairs: LookupMap::new("p".as_bytes()),
+            registries: LookupMap::new("r".as_bytes()),
+
 
         }
+    }
+
+    /// @dev Called by FPO contract after a `registry_aggregate_call()` to forward aggregated registry prices to the consumer.
+    pub fn on_registry_prices_received(
+        &mut self,
+        sender_id: AccountId,
+        pairs: Vec<String>,
+        results: Vec<Option<U128>>,
+        registry_owner: AccountId,
+    ) {
+        self.registries.insert(
+            &registry_owner,
+            &Registry {
+                pairs,
+                results,
+                sender_id,
+            },
+        );
+    }
+    /// @dev Gets a cached registry prices from this contract.
+    pub fn get_registry(&self, registry: AccountId) -> Registry {
+        self.registries
+            .get(&registry)
+            .expect("no registry with this account id")
     }
 
     /// @dev Called by FPO contract after a `..._call()` call to forward a price to the consumer.
@@ -71,7 +108,7 @@ impl Consumer {
         sender_id: AccountId,
         pairs: Vec<String>,
         price_type: PriceType,
-        results: Vec<Option<U128>>,
+        results: Vec<Option<U128>>
     ) {
         for index in 0..pairs.len() {
 

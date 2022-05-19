@@ -2,6 +2,8 @@ mod admin;
 mod callbacks;
 mod price_pair;
 
+mod registry;
+use crate::registry::Registry;
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;
@@ -14,6 +16,7 @@ use price_pair::PriceEntry;
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct FPOContract {
     pub pairs: LookupMap<String, PriceEntry>,
+    pub registries: LookupMap<AccountId, Registry>, // maps:  AccountId => Registry
     pub admin: AccountId,
 }
 
@@ -21,6 +24,7 @@ pub struct FPOContract {
 #[derive(BorshStorageKey, BorshSerialize)]
 enum FPOStorageKeys {
     Pairs,
+    Registries
 }
 
 /// Constructor
@@ -31,6 +35,7 @@ impl FPOContract {
         Self {
             admin,
             pairs: LookupMap::new(FPOStorageKeys::Pairs),
+            registries: LookupMap::new(FPOStorageKeys::Registries),
         }
     }
 }
