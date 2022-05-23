@@ -24,6 +24,7 @@ pub struct PriceEntry {
     // pub signers: UnorderedSet<PublicKey>,
     pub signers: Vec<PublicKey>,
     // pub signers: LookupSet<PublicKey>
+    pub latest_round_id: u64,
 }
 
 
@@ -36,6 +37,7 @@ impl PriceEntry {
             price,
             decimals,
             last_update, 
+            latest_round_id: 1,
         }
     }
     // pub fn new() -> Self {
@@ -66,6 +68,7 @@ impl FPOContract {
     pub fn set_price(&mut self, pair: String, price: U128) {
         let mut entry = self.pairs.get(&pair).expect("pair does not exist");
         entry.last_update = env::block_timestamp();
+        entry.latest_round_id = entry.latest_round_id + 1;
         entry.price = price;
         self.pairs.insert(&pair, &entry);
     }
@@ -111,9 +114,10 @@ impl FPOContract {
 
     /// Sets the price for a given price pair by a provider
     #[payable]
-    pub fn push_data(&mut self, pair: String, price: U128) {
+    pub fn push_data(&mut self, pair: String, price: U128, round_id: u64) {
         // assert signer
         let entry = self.pairs.get(&pair).expect("Pair doesn't exist");
+        assert!(entry.latest_round_id == round_id, "Wrong round_id");
         assert!(entry.signers.contains(&env::signer_account_pk()));
         // update priceentry
         self.set_price(pair, price);
@@ -127,15 +131,23 @@ impl FPOContract {
         signers_pks: Vec<PublicKey>,
         pair: String,
         prices: Vec<U128>,
+        round_id: u64
     ) {
         assert_eq!(signatures.len(), prices.len());
         assert_eq!(signatures.len(), signers_pks.len());
 
         let entry = self.pairs.get(&pair).expect("Pair doesn't exist");
+        assert!(entry.latest_round_id == round_id, "Wrong round_id");
+        let storage_used_before = env::storage_usage();
+
+        // let mut signers_set: UnorderedSet<PublicKey> = UnorderedSet::new(b"m"); //costs 522
+        let mut signers_set: LookupSet<PublicKey> = LookupSet::new(b"m"); // costs 234
+        // let mut signers_map: LookupMap<PublicKey, bool> = LookupMap::new(b"m"); // costs 237
+
         for (index, signature) in signatures.iter().enumerate() {
             assert!(entry.signers.contains(&signers_pks[index]), "Signer doesnt exist");
 
-            let message = format!("{}:{:?}", pair, U128::from(prices[index]));
+            let message = format!("{}:{}:{:?}", pair, round_id,  U128::from(prices[index]));
             let data: &[u8] = message.as_bytes();
             let sig: ed25519_dalek::Signature = ed25519_dalek::Signature::try_from(signature.as_ref())
                 .expect("Signature should be a valid array of 64 bytes [13, 254, 123, ...]");
@@ -147,10 +159,18 @@ impl FPOContract {
             assert!(public_key.verify(data, &sig).is_ok(), "Couldn't verify signature");
             // assert ascending order
             if index < prices.len() - 1 {
-                assert!(u128::from(prices[index]) < u128::from(prices[index + 1]), "Prices not sorted");
+                assert!(u128::from(prices[index]) <= u128::from(prices[index + 1]), "Prices not sorted");
             }
-        }
+            assert!(!signers_set.contains(&signers_pks[index]), "Duplicate signature");
+            // assert!(!signers_map.contains_key(&signers_pks[index]), "Duplicate signature");
 
+            signers_set.insert(&signers_pks[index]);
+            // signers_map.insert(&signers_pks[index], &true);
+
+
+        }
+        let storage_used_after = env::storage_usage();
+        log!("STORAGE USED =  {:?}", storage_used_after - storage_used_before);
         log!("VERIFIES*********");
         let price;
         if prices.len() % 2 == 0 {
@@ -244,20 +264,6 @@ mod tests {
         builder
     }
 
-    // DOESNT PANIC!!!
-    // #[should_panic]
-    // #[test]
-    // fn pair_name_too_long() {
-    //     let context = get_context(alice(), alicepk());
-    //     testing_env!(context.build());
-    //     let mut fpo_contract = FPOContract::new(alice());
-    //     fpo_contract.create_pair(
-    //         "1234567890123".to_string(),
-    //         u16::max_value(),
-    //         U128(u128::max_value()),
-    //     );
-    // }
-
     #[test]
     fn measure_storage_cost() {
         let context = get_context(alice(), alicepk());
@@ -273,7 +279,7 @@ mod tests {
         );
 
         let storage_used_after = env::storage_usage();
-        assert_eq!(storage_used_after - storage_used_before, 124); // was 170, 350
+        assert_eq!(storage_used_after - storage_used_before, 132); // was 170, 350, 124
     }
 
     #[test]
@@ -338,6 +344,10 @@ mod tests {
         testing_env!(context.build());
         let mut fpo_contract = FPOContract::new(alice());
         fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500), vec![alicepk()]);
+        let round = fpo_contract
+        .get_entry("ETH/USD".to_string())
+        .unwrap()
+        .latest_round_id;
         assert_eq!(
             U128(2500),
             fpo_contract
@@ -346,7 +356,7 @@ mod tests {
                 .price
         );
 
-        fpo_contract.push_data("ETH/USD".to_string(), U128(3000));
+        fpo_contract.push_data("ETH/USD".to_string(), U128(3000), round);
 
         assert_eq!(
             U128(3000),
@@ -371,8 +381,11 @@ mod tests {
                 .unwrap()
                 .price
         );
-
-        fpo_contract.push_data("ETH/USD".to_string(), U128(3000));
+        let round = fpo_contract
+        .get_entry("ETH/USD".to_string())
+        .unwrap()
+        .latest_round_id;
+        fpo_contract.push_data("ETH/USD".to_string(), U128(3000),round );
 
         assert_eq!(
             U128(3000),
@@ -385,8 +398,11 @@ mod tests {
         // switch to bob as signer
         context = get_context(bob(), bobpk());
         testing_env!(context.build());
-
-        fpo_contract.push_data("ETH/USD".to_string(), U128(5000));
+        let round = fpo_contract
+        .get_entry("ETH/USD".to_string())
+        .unwrap()
+        .latest_round_id;
+        fpo_contract.push_data("ETH/USD".to_string(), U128(5000), round);
 
         assert_eq!(
             U128(5000),
