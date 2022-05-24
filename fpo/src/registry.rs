@@ -1,6 +1,5 @@
 use crate::*;
-use callbacks::{ext_price_consumer, GAS_TO_SEND_PRICE, ZERO_BALANCE};
-use near_sdk::{Promise, Timestamp};
+use near_sdk::Timestamp;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Registry {
@@ -9,23 +8,19 @@ pub struct Registry {
 }
 
 // /// Private contract methods
-// impl FPOContract {
-//     /// Returns all the data associated with a provider wrapped in an Option
-//     pub fn get_registry_option(&self, account_id: &AccountId) -> Option<Registry> {
-//         self.registries.get(account_id)
-//     }
-// }
+impl FPOContract {
+    /// Returns all the data associated with a provider wrapped in an Option
+    pub fn get_registry_option(&self, account_id: &AccountId) -> Option<Registry> {
+        self.registries.get(account_id)
+    }
+}
 
 /// Public contract methods
 #[near_bindgen]
 impl FPOContract {
     /// Create a new registry, charging for storage
     #[payable]
-    pub fn create_registry(
-        &mut self,
-        pairs: Vec<String>,
-        min_last_update: Timestamp,
-    ) {
+    pub fn create_registry(&mut self, pairs: Vec<String>, min_last_update: Timestamp) {
         let initial_storage_usage = env::storage_usage();
 
         // insert the new registry associated with tx predecessor_account_id
@@ -48,11 +43,12 @@ impl FPOContract {
     }
 
     pub fn registry_aggregate_median(&self, registry_owner: AccountId) -> Vec<Option<U128>> {
-        let reg = self.registries.get(&registry_owner).expect("Registry not found");
+        let reg = self
+            .registries
+            .get(&registry_owner)
+            .expect("Registry not found");
         self.get_prices(reg.pairs)
     }
-
-
 }
 
 /// Registry tests
@@ -113,21 +109,34 @@ mod tests {
         let mut fpo_contract = FPOContract::new(alice());
 
         // alice creates feeds for ETH/USD and BTC/USD
-        fpo_contract.create_pair("ETH/USD".to_string(), 8, U128(2500), vec![alicepk(), bobpk()]);
-        fpo_contract.create_pair("BTC/USD".to_string(), 8, U128(40000), vec![alicepk(), bobpk()]);
-        fpo_contract.create_pair("NEAR/USD".to_string(), 8, U128(10), vec![alicepk(), bobpk()]);
-
+        fpo_contract.create_pair(
+            "ETH/USD".to_string(),
+            8,
+            U128(2500),
+            vec![alicepk(), bobpk()],
+        );
+        fpo_contract.create_pair(
+            "BTC/USD".to_string(),
+            8,
+            U128(40000),
+            vec![alicepk(), bobpk()],
+        );
+        fpo_contract.create_pair(
+            "NEAR/USD".to_string(),
+            8,
+            U128(10),
+            vec![alicepk(), bobpk()],
+        );
 
         // use bob
         let context = get_context(bob(), bobpk(), STORAGE_COST);
         testing_env!(context.build());
 
-
         // bob creates a registry using his and alice's feeds
         let context = get_context(bob(), bobpk(), REGISTRY_COST);
         testing_env!(context.build());
         fpo_contract.create_registry(
-            vec![ "ETH/USD".to_string(), "BTC/USD".to_string()],
+            vec!["ETH/USD".to_string(), "BTC/USD".to_string()],
             0, // min_last_update
         );
 
@@ -137,7 +146,11 @@ mod tests {
         );
         // bob reorders elements in his registry and adds NEAR/USD
         fpo_contract.create_registry(
-            vec![ "ETH/USD".to_string(), "BTC/USD".to_string(), "NEAR/USD".to_string()],
+            vec![
+                "ETH/USD".to_string(),
+                "BTC/USD".to_string(),
+                "NEAR/USD".to_string(),
+            ],
             0, // min_last_update
         );
 

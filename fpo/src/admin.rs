@@ -37,8 +37,6 @@ impl FPOContract {
         }
         self.pairs.insert(&pair, &entry);
     }
-
-    
 }
 
 /// Admin tests

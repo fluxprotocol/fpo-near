@@ -31,18 +31,13 @@ pub trait PriceConsumer {
         results: Vec<Option<U128>>,
         registry_owner: AccountId,
     );
-
 }
 
 /// Public contract methods
 #[near_bindgen]
 impl FPOContract {
     /// Forwards a price to the price consumer
-    pub fn get_price_call(
-        &self,
-        pair: String,
-        receiver_id: AccountId,
-    ) -> Promise {
+    pub fn get_price_call(&self, pair: String, receiver_id: AccountId) -> Promise {
         let sender_id = env::predecessor_account_id();
         let price = self.get_price(pair.clone());
         ext_price_consumer::on_price_received(
@@ -57,11 +52,7 @@ impl FPOContract {
     }
 
     /// Forwards prices to the price consumer
-    pub fn get_prices_call(
-        &self,
-        pairs: Vec<String>,
-        receiver_id: AccountId,
-    ) -> Promise {
+    pub fn get_prices_call(&self, pairs: Vec<String>, receiver_id: AccountId) -> Promise {
         let sender_id = env::predecessor_account_id();
         let entries = self.get_prices(pairs.clone());
         log!("entries: {:?}", entries);
@@ -77,14 +68,16 @@ impl FPOContract {
         )
     }
 
-
     /// Calls `registry_aggregate` and forwards the result to the price consumer
     pub fn registry_aggregate_call(
         &self,
         registry_owner: AccountId,
         receiver_id: AccountId,
     ) -> Promise {
-        let registry = self.registries.get(&registry_owner).expect("No registry found");
+        let registry = self
+            .registries
+            .get(&registry_owner)
+            .expect("No registry found");
         let results = self.registry_aggregate_median(registry_owner.clone());
         ext_price_consumer::on_registry_prices_received(
             env::predecessor_account_id(),

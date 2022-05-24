@@ -11,8 +11,8 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{env, ext_contract, log, near_bindgen, AccountId, Gas, PanicOnDefault, Promise};
 use near_sdk::Balance;
+use near_sdk::{env, ext_contract, log, near_bindgen, AccountId, Gas, PanicOnDefault, Promise};
 
 const NO_DEPOSIT: Balance = 0;
 const GAS_FOR_RESOLVE_TRANSFER: Gas = Gas(5_000_000_000_000);
@@ -43,16 +43,12 @@ pub struct Registry {
     pub sender_id: AccountId,
 }
 
-
-
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Consumer {
     oracle: AccountId,
     pairs: LookupMap<String, PriceEntry>, // maps:  AccountId => Provider
     registries: LookupMap<AccountId, Registry>, // maps:  AccountId => Registry
-
-
 }
 
 #[derive(
@@ -63,8 +59,6 @@ pub enum PriceType {
     Multiple,
 }
 
-
-
 #[near_bindgen]
 impl Consumer {
     #[init]
@@ -73,8 +67,6 @@ impl Consumer {
             oracle,
             pairs: LookupMap::new("p".as_bytes()),
             registries: LookupMap::new("r".as_bytes()),
-
-
         }
     }
 
@@ -108,10 +100,9 @@ impl Consumer {
         sender_id: AccountId,
         pairs: Vec<String>,
         price_type: PriceType,
-        results: Vec<Option<U128>>
+        results: Vec<Option<U128>>,
     ) {
         for index in 0..pairs.len() {
-
             if price_type == PriceType::Single {
                 match results[0] {
                     Some(result) => {
@@ -124,8 +115,8 @@ impl Consumer {
                     }
                     None => log!("Not found"),
                 }
-
-            }else { // Multiple
+            } else {
+                // Multiple
                 match results[index] {
                     Some(result) => {
                         let entry: PriceEntry = PriceEntry {
@@ -137,12 +128,10 @@ impl Consumer {
                     }
                     None => log!("Not found"),
                 }
-
             }
         }
     }
 
- 
     /// @dev Gets a cached price from this contract.
     pub fn get_pair(&self, pair: String) -> PriceEntry {
         self.pairs.get(&pair).expect("No pair found")

@@ -24,7 +24,7 @@ pub struct FPOContract {
 #[derive(BorshStorageKey, BorshSerialize)]
 enum FPOStorageKeys {
     Pairs,
-    Registries
+    Registries,
 }
 
 /// Constructor
