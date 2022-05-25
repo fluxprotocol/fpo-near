@@ -37,6 +37,13 @@ impl FPOContract {
         }
         self.pairs.insert(&pair, &entry);
     }
+
+    pub fn set_min_signers(&mut self, _min_signers: u64, pair: String) {
+        self.assert_admin();
+        let mut entry = self.pairs.get(&pair).expect("No pair found");
+        entry.min_signers = _min_signers;
+        self.pairs.insert(&pair, &entry);
+    }
 }
 
 /// Admin tests

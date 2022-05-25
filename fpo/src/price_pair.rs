@@ -2,11 +2,12 @@ use crate::*;
 use ed25519_dalek::Verifier;
 use near_sdk::collections::LookupSet;
 use near_sdk::json_types::U128;
+use near_sdk::log;
 use near_sdk::{
     serde::{Deserialize, Serialize},
     Timestamp,
 };
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 #[allow(dead_code)]
 pub const STORAGE_COST: u128 = 5_700_000_000_000_000_000_000; // was 1_700_000_000_000_000_000_000
@@ -18,6 +19,7 @@ pub struct PriceEntry {
     pub last_update: Timestamp, // Time of report
     pub signers: Vec<PublicKey>,
     pub latest_round_id: u64,
+    pub min_signers: u64,
 }
 
 impl PriceEntry {
@@ -28,6 +30,7 @@ impl PriceEntry {
             decimals,
             last_update,
             latest_round_id: 1,
+            min_signers: 2,
         }
     }
 }
@@ -102,11 +105,14 @@ impl FPOContract {
         assert_eq!(signatures.len(), signers_pks.len());
 
         let entry = self.pairs.get(&pair).expect("Pair doesn't exist");
-        assert!(entry.latest_round_id == round_id, "Wrong round_id");
-
+        assert_eq!(entry.latest_round_id, round_id, "Wrong round_id");
+        assert!(
+            signers_pks.len() >= entry.min_signers.try_into().unwrap(),
+            "Too few signatures"
+        );
         // create a local set to check later for duplicate signature
-        let mut signers_set: LookupSet<PublicKey> = LookupSet::new(b"m");
-
+        // let mut signers_set: LookupSet<PublicKey> = LookupSet::new(b"m");
+        let mut signers_vec: Vec<PublicKey> = Vec::new();
         // verify signatures
         for (index, signature) in signatures.iter().enumerate() {
             assert!(
@@ -136,10 +142,11 @@ impl FPOContract {
 
             // assert unique signature
             assert!(
-                !signers_set.contains(&signers_pks[index]),
+                !signers_vec.contains(&signers_pks[index]),
                 "Duplicate signature"
             );
-            signers_set.insert(&signers_pks[index]);
+            // signers_set.insert(&signers_pks[index]);
+            signers_vec.push(signers_pks[index].clone());
         }
 
         // calculate median of answers
@@ -226,7 +233,7 @@ mod tests {
         );
 
         let storage_used_after = env::storage_usage();
-        assert_eq!(storage_used_after - storage_used_before, 132); // was 170, 350, 124
+        assert_eq!(storage_used_after - storage_used_before, 140); // was 170, 350, 124, 132
     }
 
     #[test]

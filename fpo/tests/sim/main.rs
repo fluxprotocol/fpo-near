@@ -2,7 +2,7 @@ use near_fpo::FPOContractContract;
 pub use near_sdk::json_types::Base64VecU8;
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::json;
-use near_sdk::{log, PublicKey};
+use near_sdk::{env, log, PublicKey};
 use near_sdk_sim::borsh::BorshSerialize;
 use near_sdk_sim::near_crypto::Signer;
 use near_sdk_sim::to_yocto;
@@ -27,6 +27,199 @@ fn init() -> (UserAccount, ContractAccount<FPOContractContract>) {
     );
 
     (root, fpo)
+}
+
+#[test]
+fn simulate_setting_min_signers() {
+    let (root, fpo) = init();
+
+    call!(root, fpo.new(root.account_id())).assert_success();
+
+    let provider0 = root.create_user("provider0".parse().unwrap(), to_yocto("1000000"));
+    let provider1 = root.create_user("provider1".parse().unwrap(), to_yocto("1000000"));
+    let provider2 = root.create_user("provider2".parse().unwrap(), to_yocto("1000000"));
+
+    let provider0_pk: PublicKey = provider0.signer.public_key.to_string().parse().unwrap();
+    let provider1_pk: PublicKey = provider1.signer.public_key.to_string().parse().unwrap();
+    let provider2_pk: PublicKey = provider2.signer.public_key.to_string().parse().unwrap();
+
+    // let admin create a price pair with signers, check if it exists, and get the value
+    let tx = root
+        .call(
+            fpo.account_id(),
+            "create_pair",
+            &json!([
+                "ETH/USD".to_string(),
+                8,
+                U128(2000),
+                vec![
+                    provider0_pk.clone(),
+                    provider1_pk.clone(),
+                    provider2_pk.clone()
+                ]
+            ])
+            .to_string()
+            .into_bytes(),
+            DEFAULT_GAS,
+            STORAGE_COST, // attached deposit
+        )
+        .assert_success();
+    log!("**{:?}", tx);
+    call!(root, fpo.pair_exists("ETH/USD".to_string())).assert_success();
+
+    let price_entry = call!(root, fpo.get_entry("ETH/USD".to_string()));
+    println!(
+        "Returned Price: {:?}",
+        &price_entry.unwrap_json_value()["price"].to_owned()
+    );
+
+    println!(
+        "Returned round_id: {:?}",
+        &price_entry.unwrap_json_value()["latest_round_id"].to_owned()
+    );
+    println!(
+        "Returned round_id: {:?}",
+        &price_entry.unwrap_json_value()["latest_round_id"]
+            .to_owned()
+            .as_u64()
+    );
+    let round_id: u64 = price_entry.unwrap_json_value()["latest_round_id"]
+        .to_owned()
+        .as_u64()
+        .expect("Couldn't fetch round_id");
+    let message = format!("{}:{}:{:?}", "ETH/USD", round_id, U128(1000));
+    let data: &[u8] = message.as_bytes();
+    let p0_sig = provider0.signer.sign(data);
+
+    let message = format!("{}:{}:{:?}", "ETH/USD", round_id, U128(2000));
+    let data: &[u8] = message.as_bytes();
+    let p1_sig = provider1.signer.sign(data);
+
+    let message = format!("{}:{}:{:?}", "ETH/USD", round_id, U128(3000));
+    let data: &[u8] = message.as_bytes();
+    let p2_sig = provider2.signer.sign(data);
+
+    let p0_sig_vec = p0_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
+
+    let p1_sig_vec = p1_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
+    let p2_sig_vec = p2_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
+
+    let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
+
+    // let bob update root's feed with less than 2 signatures
+    let tx = call!(
+        bob,
+        fpo.push_data_signed(
+            vec![p0_sig_vec[1..].to_vec(),],
+            vec![provider0_pk.clone(),],
+            "ETH/USD".to_string(),
+            // vec![1000, 2000, 3000],
+            vec![U128(1000)],
+            round_id
+        )
+    );
+
+    assert!(!tx.is_ok());
+    println!("----tx {:?}", tx.status());
+
+    // For some reason near_crypto's signature is converted to a 65 bytes vec, removing the first byte verifies using ed25519_dalek tho
+    // let bob update root's feed with enough signatures (2 by default)
+    let tx = call!(
+        bob,
+        fpo.push_data_signed(
+            vec![p0_sig_vec[1..].to_vec(), p1_sig_vec[1..].to_vec(),],
+            vec![provider0_pk.clone(), provider1_pk.clone(),],
+            "ETH/USD".to_string(),
+            // vec![1000, 2000, 3000],
+            vec![U128(1000), U128(2000)],
+            round_id
+        )
+    )
+    .assert_success();
+
+    println!("----tx {:?}", tx);
+
+    // // get the updated data
+    let price_entry = call!(root, fpo.get_entry("ETH/USD".to_string()));
+
+    // output and check the data
+    println!(
+        "Returned Price: {:?}",
+        &price_entry.unwrap_json_value()["price"]
+    );
+    debug_assert_eq!(
+        &price_entry.unwrap_json_value()["price"].to_owned(),
+        &"1500".to_string()
+    );
+
+    println!(
+        "Returned round_id: {:?}",
+        &price_entry.unwrap_json_value()["latest_round_id"]
+            .to_owned()
+            .as_u64()
+    );
+
+    let tx = call!(root, fpo.set_min_signers(3, "ETH/USD".to_string())).assert_success();
+
+    // // For some reason near_crypto's signature is converted to a 65 bytes vec, removing the first byte verifies using ed25519_dalek tho
+    // let bob update root's feed with 2 signatures after setting it to 3
+    let tx = call!(
+        bob,
+        fpo.push_data_signed(
+            vec![p0_sig_vec[1..].to_vec(), p1_sig_vec[1..].to_vec(),],
+            vec![provider0_pk.clone(), provider1_pk.clone(),],
+            "ETH/USD".to_string(),
+            // vec![1000, 2000, 3000],
+            vec![U128(1000), U128(2000)],
+            round_id + 1
+        )
+    );
+    assert!(!tx.is_ok());
+    println!("----tx {:?}", tx.status());
+
+    let message = format!("{}:{}:{:?}", "ETH/USD", round_id + 1, U128(1000));
+    let data: &[u8] = message.as_bytes();
+    let p0_sig = provider0.signer.sign(data);
+
+    let message = format!("{}:{}:{:?}", "ETH/USD", round_id + 1, U128(2000));
+    let data: &[u8] = message.as_bytes();
+    let p1_sig = provider1.signer.sign(data);
+
+    let message = format!("{}:{}:{:?}", "ETH/USD", round_id + 1, U128(3000));
+    let data: &[u8] = message.as_bytes();
+    let p2_sig = provider2.signer.sign(data);
+
+    let p0_sig_vec = p0_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
+
+    let p1_sig_vec = p1_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
+    let p2_sig_vec = p2_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
+
+    // let bob update feed with 3 signatures
+    let tx = call!(
+        bob,
+        fpo.push_data_signed(
+            vec![
+                p0_sig_vec[1..].to_vec(),
+                p1_sig_vec[1..].to_vec(),
+                p2_sig_vec[1..].to_vec(),
+            ],
+            vec![
+                provider0_pk.clone(),
+                provider1_pk.clone(),
+                provider2_pk.clone(),
+            ],
+            "ETH/USD".to_string(),
+            vec![U128(1000), U128(2000), U128(3000)],
+            round_id + 1
+        )
+    )
+    .assert_success();
+    let price_entry = call!(root, fpo.get_entry("ETH/USD".to_string()));
+
+    debug_assert_eq!(
+        &price_entry.unwrap_json_value()["price"].to_owned(),
+        &"2000".to_string()
+    );
 }
 
 #[test]
@@ -540,6 +733,8 @@ fn simulate_push_data_signed() {
 
     // For some reason near_crypto's signature is converted to a 65 bytes vec, removing the first byte verifies using ed25519_dalek tho
     // let bob update root's feed
+    let storage_used_before = env::storage_usage();
+    log!("BEFORE {:?}", storage_used_before);
     let tx = call!(
         bob,
         fpo.push_data_signed(
@@ -558,6 +753,11 @@ fn simulate_push_data_signed() {
             vec![U128(1000), U128(2000), U128(3000)],
             round_id
         )
+    );
+    let storage_used_after = env::storage_usage();
+    log!(
+        "STORAGE USED =  {:?}",
+        storage_used_after - storage_used_before
     );
 
     println!("----tx {:?}", tx);
@@ -605,6 +805,80 @@ fn simulate_push_data_signed() {
     // assert error
     assert!(!tx.is_ok());
     println!("----tx {:?}", tx.status());
+
+    let round_id: u64 = price_entry.unwrap_json_value()["latest_round_id"]
+        .to_owned()
+        .as_u64()
+        .expect("Couldn't fetch round_id");
+    let message = format!("{}:{}:{:?}", "ETH/USD", round_id, U128(1000));
+    let data: &[u8] = message.as_bytes();
+    let p0_sig = provider0.signer.sign(data);
+
+    let message = format!("{}:{}:{:?}", "ETH/USD", round_id, U128(2500));
+    let data: &[u8] = message.as_bytes();
+    let p1_sig = provider1.signer.sign(data);
+
+    let message = format!("{}:{}:{:?}", "ETH/USD", round_id, U128(3000));
+    let data: &[u8] = message.as_bytes();
+    let p2_sig = provider2.signer.sign(data);
+
+    let message = format!("{}:{}:{:?}", "ETH/USD", round_id, U128(4000));
+    let data: &[u8] = message.as_bytes();
+    let p3_sig = provider3.signer.sign(data);
+
+    let p0_sig_vec = p0_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
+
+    let p1_sig_vec = p1_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
+    let p2_sig_vec = p2_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
+
+    let p3_sig_vec = p3_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
+    let storage_used_before = env::storage_usage();
+
+    let tx = call!(
+        bob,
+        fpo.push_data_signed(
+            vec![
+                p0_sig_vec[1..].to_vec(),
+                p1_sig_vec[1..].to_vec(),
+                p2_sig_vec[1..].to_vec()
+            ],
+            vec![
+                provider0_pk.clone(),
+                provider1_pk.clone(),
+                provider2_pk.clone()
+            ],
+            "ETH/USD".to_string(),
+            // vec![1000, 2000, 3000],
+            vec![U128(1000), U128(2500), U128(3000)],
+            round_id // 1
+        )
+    );
+    let storage_used_after = env::storage_usage();
+    log!(
+        "STORAGE USED =  {:?}",
+        storage_used_after - storage_used_before
+    );
+    println!("----tx {:?}", tx);
+
+    // get the updated data
+    let price_entry = call!(root, fpo.get_entry("ETH/USD".to_string()));
+
+    // output and check the data
+    println!(
+        "Returned Price: {:?}",
+        &price_entry.unwrap_json_value()["price"]
+    );
+    debug_assert_eq!(
+        &price_entry.unwrap_json_value()["price"].to_owned(),
+        &"2500".to_string()
+    );
+
+    println!(
+        "Returned round_id: {:?}",
+        &price_entry.unwrap_json_value()["latest_round_id"]
+            .to_owned()
+            .as_u64()
+    );
 }
 
 #[test]
