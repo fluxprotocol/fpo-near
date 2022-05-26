@@ -5,7 +5,6 @@ use near_sdk::json_types::U128;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 
-use near_sdk::log;
 use near_sdk::{
     serde::{Deserialize, Serialize},
     Timestamp,
@@ -20,8 +19,7 @@ pub struct PriceEntry {
     pub price: U128,            // Last reported price
     pub decimals: u16,          // Amount of decimals (e.g. if 2, 100 = 1.00)
     pub last_update: Timestamp, // Time of report
-    // pub signers: Vec<PublicKey>,
-    pub signers: HashSet<PublicKey>,
+    pub signers: Vec<PublicKey>,
     pub latest_round_id: u64,
     pub min_signers: u64,
 }
@@ -29,8 +27,7 @@ pub struct PriceEntry {
 impl PriceEntry {
     pub fn new(price: U128, decimals: u16, last_update: Timestamp) -> Self {
         Self {
-            // signers: Vec::new(),
-            signers: HashSet::new(),
+            signers: Vec::new(),
             price,
             decimals,
             last_update,
@@ -82,10 +79,8 @@ impl FPOContract {
         assert!(self.pairs.get(&pair).is_none(), "pair already exists");
 
         let mut price_entry = PriceEntry::new(initial_price, decimals, env::block_timestamp());
-        let set : HashSet<PublicKey> = signers.into_iter().collect();
-        price_entry.signers.clone_from(&set);
 
-        // price_entry.signers.clone_from(&signers);
+        price_entry.signers.clone_from(&signers);
 
         self.pairs.insert(&pair, &price_entry);
 
@@ -117,13 +112,10 @@ impl FPOContract {
             signers_pks.len() >= entry.min_signers.try_into().unwrap(),
             "Too few signatures"
         );
-        // create a local set to check later for duplicate signature
-        // let mut received_signers: Vec<PublicKey> = Vec::new(); // burnt:202441142077742, used:264768111
-        let mut received_signers = HashSet::new(); // 202441142077742, 264768111
-
+        // create a local vec to check later for duplicate signature
+        let mut received_signers: Vec<PublicKey> = Vec::new();
         // verify signatures
         for (index, signature) in signatures.iter().enumerate() {
-
             assert!(
                 entry.signers.contains(&signers_pks[index]),
                 "Signer doesn't exist"
@@ -150,16 +142,12 @@ impl FPOContract {
             }
 
             // assert unique signature
-            // assert!(
-            //     !received_signers.contains(&signers_pks[index]),
-            //     "Duplicate signature"
-            // );
-            received_signers.insert(&signers_pks[index]);
-            // received_signers.push(signers_pks[index].clone());
-
+            assert!(
+                !received_signers.contains(&signers_pks[index]),
+                "Duplicate signature"
+            );
+            received_signers.push(signers_pks[index].clone());
         }
-        assert_eq!(received_signers.len(), signers_pks.len(), "Duplicate Signatures");
-
         // calculate median of answers
         let price;
         if prices.len() % 2 == 0 {

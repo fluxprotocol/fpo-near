@@ -23,10 +23,6 @@ impl FPOContract {
     pub fn add_signers(&mut self, received_signers: Vec<PublicKey>, pair: String) {
         self.assert_admin();
         let mut entry = self.pairs.get(&pair).expect("No pair found");
-        // for signer in received_signers {
-        //     // entry.signers.push(signer);
-        //     entry.signers.insert(signer);
-        // }
         entry.signers.extend(received_signers.into_iter());
         self.pairs.insert(&pair, &entry);
     }
@@ -34,10 +30,8 @@ impl FPOContract {
         self.assert_admin();
         let mut entry = self.pairs.get(&pair).expect("No pair found");
         for signer in received_signers {
-            // let index = entry.signers.iter().position(|x| *x == signer).unwrap();
-            // entry.signers.remove(index);
-            entry.signers.remove(&signer);
-
+            let index = entry.signers.iter().position(|x| *x == signer).unwrap();
+            entry.signers.remove(index);
         }
         self.pairs.insert(&pair, &entry);
     }
