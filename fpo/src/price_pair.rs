@@ -118,8 +118,8 @@ impl FPOContract {
             "Too few signatures"
         );
         // create a local set to check later for duplicate signature
-        // let mut received_signers: Vec<PublicKey> = Vec::new(); // 264768111
-        let mut received_signers = HashSet::new(); // 264768111
+        // let mut received_signers: Vec<PublicKey> = Vec::new(); // burnt:202441142077742, used:264768111
+        let mut received_signers = HashSet::new(); // 202441142077742, 264768111
 
         // verify signatures
         for (index, signature) in signatures.iter().enumerate() {
