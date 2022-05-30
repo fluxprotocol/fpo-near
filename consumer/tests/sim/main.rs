@@ -56,51 +56,49 @@ fn simulate_registry_agg_call() {
     let provider2_pk: PublicKey = provider2.signer.public_key.to_string().parse().unwrap();
 
     // let admin create a price pair with signers, check if it exists, and get the value
-    let tx = root
-        .call(
-            fpo.account_id(),
-            "create_pair",
-            &json!([
-                "ETH/USD".to_string(),
-                8,
-                U128(2000),
-                vec![
-                    provider0_pk.clone(),
-                    provider1_pk.clone(),
-                    provider2_pk.clone()
-                ]
-            ])
-            .to_string()
-            .into_bytes(),
-            DEFAULT_GAS,
-            STORAGE_COST, // attached deposit
-        )
-        .assert_success();
-    let tx = root
-        .call(
-            fpo.account_id(),
-            "create_pair",
-            &json!([
-                "BTC/USD".to_string(),
-                8,
-                U128(45000),
-                vec![
-                    provider0_pk.clone(),
-                    provider1_pk.clone(),
-                    provider2_pk.clone()
-                ]
-            ])
-            .to_string()
-            .into_bytes(),
-            DEFAULT_GAS,
-            STORAGE_COST, // attached deposit
-        )
-        .assert_success();
+    root.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!([
+            "ETH/USD".to_string(),
+            8,
+            U128(2000),
+            vec![
+                provider0_pk.clone(),
+                provider1_pk.clone(),
+                provider2_pk.clone()
+            ]
+        ])
+        .to_string()
+        .into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST, // attached deposit
+    )
+    .assert_success();
+    root.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!([
+            "BTC/USD".to_string(),
+            8,
+            U128(45000),
+            vec![
+                provider0_pk.clone(),
+                provider1_pk.clone(),
+                provider2_pk.clone()
+            ]
+        ])
+        .to_string()
+        .into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST, // attached deposit
+    )
+    .assert_success();
 
     // create a price pair, check if it exists, and get the value
 
     // create registry for user
-    let tx = user.call(
+    user.call(
         fpo.account_id(),
         "create_registry",
         &json!([vec!["ETH/USD".to_string(), "BTC/USD".to_string()], 0])

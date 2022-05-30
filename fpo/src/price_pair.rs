@@ -1,9 +1,6 @@
 use crate::*;
 use ed25519_dalek::Verifier;
-use near_sdk::collections::LookupSet;
 use near_sdk::json_types::U128;
-use std::collections::HashSet;
-use std::iter::FromIterator;
 
 use near_sdk::{
     serde::{Deserialize, Serialize},
@@ -12,7 +9,7 @@ use near_sdk::{
 use std::convert::{TryFrom, TryInto};
 
 #[allow(dead_code)]
-pub const STORAGE_COST: u128 = 5_700_000_000_000_000_000_000; // was 1_700_000_000_000_000_000_000
+pub const STORAGE_COST: u128 = 5_700_000_000_000_000_000_000;
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug)]
 pub struct PriceEntry {

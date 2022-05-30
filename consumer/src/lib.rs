@@ -1,9 +1,11 @@
 // This contract demonstrates three ways to fetch/consume prices from the FPO contract:
 //
 // 1. Make a call originating on the FPO contract with any `..._call()`
-//    function to forward prices to the `on_prices_received()` function
+//    function to forward prices to the `on_price_received()` function
 //    in this contract.
-
+// 2. Make a call originating on the FPO contract with `registry_aggregate_call()`
+//    to forward prices from a registry to the `on_registry_prices_received()`
+//    function in this contract.
 // 3. Make a call originating from this contract with `get_price()`, `get_prices()`,
 //     to forward prices to the `price_callback()` or `prices_callback()` function in this contract.
 

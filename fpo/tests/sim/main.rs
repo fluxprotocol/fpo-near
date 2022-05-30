@@ -1,12 +1,9 @@
-use std::collections::HashSet;
-
 use near_fpo::FPOContractContract;
 pub use near_sdk::json_types::Base64VecU8;
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::json;
-use near_sdk::{env, log, AccountId, PublicKey};
+use near_sdk::{env, log, PublicKey};
 use near_sdk_sim::borsh::BorshSerialize;
-use near_sdk_sim::lazy_static_include::syn::Signature;
 use near_sdk_sim::near_crypto::Signer;
 use near_sdk_sim::to_yocto;
 use near_sdk_sim::{call, deploy, init_simulator, ContractAccount, UserAccount};
@@ -190,7 +187,7 @@ fn simulate_setting_min_signers() {
     let p0_sig_vec = p0_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
 
     let p1_sig_vec = p1_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
-    let p2_sig_vec = p2_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
+    let _p2_sig_vec = p2_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
 
     let bob = root.create_user("bob".parse().unwrap(), to_yocto("1000000"));
 
@@ -282,7 +279,7 @@ fn simulate_setting_min_signers() {
     let p2_sig_vec = p2_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
 
     // let bob update feed with 3 signatures
-    let tx = call!(
+    call!(
         bob,
         fpo.push_data_signed(
             vec![
@@ -324,46 +321,44 @@ fn simulate_creating_registries() {
     let provider2_pk: PublicKey = provider2.signer.public_key.to_string().parse().unwrap();
 
     // let admin create a price pair with signers, check if it exists, and get the value
-    let tx = root
-        .call(
-            fpo.account_id(),
-            "create_pair",
-            &json!([
-                "ETH/USD".to_string(),
-                8,
-                U128(2000),
-                vec![
-                    provider0_pk.clone(),
-                    provider1_pk.clone(),
-                    provider2_pk.clone()
-                ]
-            ])
-            .to_string()
-            .into_bytes(),
-            DEFAULT_GAS,
-            STORAGE_COST, // attached deposit
-        )
-        .assert_success();
-    let tx = root
-        .call(
-            fpo.account_id(),
-            "create_pair",
-            &json!([
-                "BTC/USD".to_string(),
-                8,
-                U128(45000),
-                vec![
-                    provider0_pk.clone(),
-                    provider1_pk.clone(),
-                    provider2_pk.clone()
-                ]
-            ])
-            .to_string()
-            .into_bytes(),
-            DEFAULT_GAS,
-            STORAGE_COST, // attached deposit
-        )
-        .assert_success();
+    root.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!([
+            "ETH/USD".to_string(),
+            8,
+            U128(2000),
+            vec![
+                provider0_pk.clone(),
+                provider1_pk.clone(),
+                provider2_pk.clone()
+            ]
+        ])
+        .to_string()
+        .into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST, // attached deposit
+    )
+    .assert_success();
+    root.call(
+        fpo.account_id(),
+        "create_pair",
+        &json!([
+            "BTC/USD".to_string(),
+            8,
+            U128(45000),
+            vec![
+                provider0_pk.clone(),
+                provider1_pk.clone(),
+                provider2_pk.clone()
+            ]
+        ])
+        .to_string()
+        .into_bytes(),
+        DEFAULT_GAS,
+        STORAGE_COST, // attached deposit
+    )
+    .assert_success();
 
     let price_entry = call!(root, fpo.get_entry("ETH/USD".to_string()));
     let round_id: u64 = price_entry.unwrap_json_value()["latest_round_id"]
@@ -396,7 +391,7 @@ fn simulate_creating_registries() {
 
     // For some reason near_crypto's signature is converted to a 65 bytes vec, removing the first byte verifies using ed25519_dalek tho
     // let bob update root's feed
-    let tx = call!(
+    call!(
         bob,
         fpo.push_data_signed(
             vec![
@@ -430,7 +425,7 @@ fn simulate_creating_registries() {
         &"2000".to_string()
     );
     // create registry for bob
-    let tx = bob.call(
+    bob.call(
         fpo.account_id(),
         "create_registry",
         &json!([vec!["ETH/USD".to_string(), "BTC/USD".to_string()], 0])
@@ -912,7 +907,7 @@ fn simulate_push_data_signed() {
     let p1_sig_vec = p1_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
     let p2_sig_vec = p2_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
 
-    let p3_sig_vec = p3_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
+    let _p3_sig_vec = p3_sig.try_to_vec().expect("CANT CONVERT SIG TO VEC");
     let storage_used_before = env::storage_usage();
 
     let tx = call!(
